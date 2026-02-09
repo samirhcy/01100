@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project: SOURCE CODE // Phase 9</title>
+    <style>
+      /* =========================================
+           1. CORE STYLES & VARIABLES
+           ========================================= */
+      :root {
+        --primary: #00f3ff;
+        --combat: #ff3333;
+        --terminal: #00ff00;
+        --passive: #888888; /* New Monochrome Color */
+        --bg-glass: rgba(5, 10, 15, 0.9);
+        --margin: 30px;
+        --hud-color: var(--primary);
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #000000;
+        font-family: "Courier New", Courier, monospace;
+        color: white;
+        user-select: none;
+      }
+      canvas {
+        display: block;
+      }
+
+      /* DYNAMIC THEME SWITCHING */
+      body.mode-roam {
+        --hud-color: var(--primary);
+      }
+      body.mode-combat {
+        --hud-color: var(--combat);
+      }
+
+      /* =========================================
+           2. UI LAYOUT
+           ========================================= */
+      #ui-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 1s;
+      }
+      #ui-layer.active {
+        opacity: 1;
+      }
+      .hud-element {
+        pointer-events: auto;
+        position: absolute;
+      }
+
+      /* =========================================
+           3. HUD ELEMENTS
+           ========================================= */
+      #profile-indicator {
+        position: absolute;
+        top: var(--margin);
+        left: 50%;
+        transform: translateX(-50%);
+        border: 1px solid var(--hud-color);
+        background: rgba(0, 0, 0, 0.8);
+        padding: 5px 20px;
+        font-weight: bold;
+        color: var(--hud-color);
+        text-shadow: 0 0 10px var(--hud-color);
+        letter-spacing: 2px;
+        transition: 0.3s;
+      }
+
+      /* Top Left: Logs */
+      #hud-top-left {
+        top: var(--margin);
+        left: var(--margin);
+        width: 350px;
+        text-shadow: 0 1px 2px black;
+      }
+      .log-entry {
+        font-size: 13px;
+        margin-bottom: 4px;
+        opacity: 0.6;
+        transition: opacity 0.5s;
+        color: var(--hud-color);
+      }
+      .log-entry.new {
+        opacity: 1;
+        font-weight: bold;
+        text-shadow: 0 0 8px var(--hud-color);
+      }
+      .log-entry.error {
+        color: #ff3333;
+        opacity: 1;
+        text-shadow: 0 0 8px #ff3333;
+      }
+      #coords-display {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #888;
+        letter-spacing: 1px;
+      }
+
+      /* Top Right: Menu */
+      #hud-top-right {
+        top: var(--margin);
+        right: var(--margin);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+      #menu-icon {
+        font-size: 24px;
+        color: var(--primary);
+        cursor: pointer;
+        padding: 5px;
+        background: rgba(0, 0, 0, 0.5);
+        transition: 0.2s;
+      }
+      #menu-dropdown {
+        display: none;
+        margin-top: 10px;
+        background: var(--bg-glass);
+        border: 1px solid var(--primary);
+        min-width: 140px;
+      }
+      #menu-dropdown.show {
+        display: block;
+      }
+      .menu-item {
+        padding: 10px;
+        font-size: 12px;
+        color: #ccc;
+        cursor: pointer;
+        border-bottom: 1px solid #333;
+      }
+      .menu-item:hover {
+        background: rgba(0, 243, 255, 0.1);
+        color: white;
+      }
+
+      /* Bottom Left: Data & Map */
+      #hud-bottom-left {
+        bottom: var(--margin);
+        left: var(--margin);
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      #data-bank {
+        font-size: 14px;
+        color: var(--hud-color);
+        font-weight: bold;
+        text-shadow: 0 0 5px var(--hud-color);
+        background: rgba(0, 0, 0, 0.5);
+        padding: 5px 10px;
+        border-left: 3px solid var(--hud-color);
+        transition: 0.3s;
+      }
+      #minimap-container {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        border: 2px solid #333;
+        background: #000;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+      }
+      #minimap-canvas {
+        width: 100%;
+        height: 100%;
+        opacity: 0.8;
+      }
+      #minimap-border {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 1px solid var(--hud-color);
+        box-shadow: inset 0 0 10px var(--hud-color);
+        pointer-events: none;
+        transition: 0.3s;
+      }
+
+      /* Bottom Center: Stats & Hotbar */
+      #hud-bottom-center {
+        bottom: var(--margin);
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 500px;
+      }
+      .stats-row {
+        display: flex;
+        gap: 15px;
+        width: 100%;
+        margin-bottom: 12px;
+      }
+      .bar-wrapper {
+        flex: 1;
+      }
+      .bar-container {
+        height: 6px;
+        background: #111;
+        border: 1px solid #444;
+      }
+
+      /* Dynamic Bar Colors based on Mode */
+      #bar-health {
+        height: 100%;
+        width: 100%;
+        transition: width 0.2s, background 0.3s, box-shadow 0.3s;
+      }
+      #bar-light {
+        height: 100%;
+        width: 100%;
+        transition: width 0.2s, background 0.3s, box-shadow 0.3s;
+      }
+
+      /* Roam Mode: Monochrome */
+      body.mode-roam #bar-health {
+        background: var(--passive);
+        box-shadow: none;
+      }
+      body.mode-roam #bar-light {
+        background: #ccc;
+        box-shadow: 0 0 5px #ccc;
+      }
+      /* Combat Mode: Active Colors */
+      body.mode-combat #bar-health {
+        background: var(--combat);
+        box-shadow: 0 0 8px var(--combat);
+      }
+      body.mode-combat #bar-light {
+        background: var(--primary);
+        box-shadow: 0 0 8px var(--primary);
+      }
+
+      .bar-label {
+        font-size: 10px;
+        margin-bottom: 4px;
+        display: block;
+        color: #aaa;
+      }
+
+      /* Hotbar Layout Fix */
+      #hotbar {
+        display: flex;
+        gap: 5px;
+        transition: opacity 0.3s;
+        width: 100%; /* Match the 500px parent */
+      }
+      .slot {
+        flex: 1; /* Stretch to fill space */
+        height: 45px;
+        background: rgba(20, 20, 20, 0.6);
+        border: 1px solid #444;
+        color: #666;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 10px;
+        position: relative;
+      }
+      .slot-cmd {
+        color: var(--primary);
+        font-size: 9px;
+        padding: 2px;
+        position: absolute;
+        bottom: 2px;
+        width: 100%;
+        text-align: center;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      /* Bottom Right: Terminal */
+      #hud-bottom-right {
+        bottom: var(--margin);
+        right: var(--margin);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        transition: opacity 0.3s;
+      }
+
+      #tablet-icon {
+        width: 50px;
+        height: 60px;
+        background: var(--bg-glass);
+        border: 1px solid var(--primary);
+        border-radius: 4px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        color: var(--primary);
+        font-size: 20px;
+        z-index: 20;
+      }
+      #terminal-wrapper {
+        position: absolute;
+        bottom: 75px;
+        right: 0;
+        width: 350px;
+        height: 0;
+        background: rgba(0, 10, 0, 0.98);
+        border: 1px solid #444;
+        overflow: hidden;
+        transition: height 0.3s;
+        border-radius: 4px 4px 0 0;
+        display: flex;
+        flex-direction: column;
+      }
+      #terminal-wrapper.open {
+        height: 400px;
+        border-color: var(--terminal);
+      }
+      .term-header {
+        background: #051a05;
+        padding: 8px;
+        font-size: 11px;
+        color: #4f4;
+        text-align: center;
+        border-bottom: 1px solid #141;
+      }
+      #term-output {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+        font-family: "Consolas", monospace;
+        font-size: 12px;
+        color: var(--terminal);
+      }
+      #term-input-line {
+        display: flex;
+        padding: 10px;
+        background: #000;
+        border-top: 1px solid #141;
+      }
+      #term-input {
+        background: transparent;
+        border: none;
+        color: var(--terminal);
+        font-family: "Consolas", monospace;
+        font-size: 13px;
+        flex-grow: 1;
+        outline: none;
+      }
+
+      /* Screens */
+      #overlay-screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: black;
+        z-index: 100;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        transition: opacity 1s;
+        pointer-events: none;
+      }
+      #overlay-text {
+        font-size: 20px;
+        color: var(--primary);
+        letter-spacing: 5px;
+      }
+    </style>
+  </head>
+  <body class="mode-roam">
+    <div id="overlay-screen">
+      <div id="overlay-text">SYSTEM BOOT...</div>
+    </div>
+
+    <div id="ui-layer">
+      <div id="profile-indicator">PROFILE: ROAMING</div>
+
+      <div id="hud-top-left" class="hud-element">
+        <div id="system-log"></div>
+        <div id="coords-display">LOC: [0, 0]</div>
+      </div>
+
+      <div id="hud-top-right" class="hud-element">
+        <div id="menu-icon" onclick="UISystem.toggleMenu()">☰</div>
+        <div id="menu-dropdown">
+          <div class="menu-item" onclick="TerminalSystem.log('GAME SAVED')">
+            SAVE
+          </div>
+          <div class="menu-item" onclick="TerminalSystem.log('SETTINGS')">
+            SETTINGS
+          </div>
+          <div class="menu-item" onclick="location.reload()">REBOOT</div>
+        </div>
+      </div>
+
+      <div id="hud-bottom-left" class="hud-element">
+        <div id="data-bank">DATA: 0 MB</div>
+        <div id="minimap-container">
+          <canvas id="minimap-canvas" width="140" height="140"></canvas>
+          <div id="minimap-border"></div>
+        </div>
+      </div>
+
+      <div id="hud-bottom-center" class="hud-element">
+        <div class="stats-row">
+          <div class="bar-wrapper">
+            <span class="bar-label">INTEGRITY</span>
+            <div class="bar-container"><div id="bar-health"></div></div>
+          </div>
+          <div class="bar-wrapper">
+            <span class="bar-label">LIGHT</span>
+            <div class="bar-container"><div id="bar-light"></div></div>
+          </div>
+        </div>
+        <div id="hotbar">
+          <div class="slot" id="slot-1-box">
+            <span>1</span>
+            <div class="slot-cmd" id="slot-1"></div>
+          </div>
+          <div class="slot" id="slot-2-box">
+            <span>2</span>
+            <div class="slot-cmd" id="slot-2"></div>
+          </div>
+          <div class="slot" id="slot-3-box">
+            <span>3</span>
+            <div class="slot-cmd" id="slot-3"></div>
+          </div>
+          <div class="slot" id="slot-4-box">
+            <span>4</span>
+            <div class="slot-cmd" id="slot-4"></div>
+          </div>
+          <div class="slot" id="slot-5-box">
+            <span>5</span>
+            <div class="slot-cmd" id="slot-5"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="hud-bottom-right" class="hud-element">
+        <div id="terminal-wrapper">
+          <div class="term-header">USER_TERMINAL</div>
+          <div id="term-output"></div>
+          <div id="term-input-line">
+            <span style="color: #0f0; margin-right: 10px">></span>
+            <input type="text" id="term-input" autocomplete="off" />
+          </div>
+        </div>
+        <div id="tablet-icon" onclick="TerminalSystem.toggle()">&lt;/&gt;</div>
+      </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+      // =========================================
+      // SECTION 1: CONFIGURATION
+      // =========================================
+      const Config = {
+        gridSize: 60,
+        baseLightRadius: 350,
+        safeZone: 400,
+        colors: {
+          grid: "#222",
+          wall: "#fff",
+          fragment: "#00f3ff",
+          enemy: "#ff3333",
+        },
+        player: { maxHealth: 100, maxSpeed: 4, accel: 0.15, friction: 0.96 },
+        combat: { bulletSpeed: 8, bulletCost: 2, enemyHP: 3, enemyDamage: 10 },
+      };
+
+      // =========================================
+      // SECTION 2: STATE MANAGEMENT
+      // =========================================
+      const State = {
+        player: {
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          size: 10,
+          health: 100,
+          data: 0,
+          mode: "roam",
+          cloaked: false,
+          cloakTimer: 0,
+          isTerminalOpen: false,
+          scanActive: false,
+          scanTimer: 0,
+          isDead: false,
+        },
+        world: { structures: [], fragments: [], enemies: [], projectiles: [] },
+        hotbar: { 1: "sys.scan", 2: "sys.cloak", 3: null, 4: null, 5: null },
+        input: { keys: { w: false, a: false, s: false, d: false } },
+      };
+
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const miniCanvas = document.getElementById("minimap-canvas");
+      const miniCtx = miniCanvas.getContext("2d");
+
+      // =========================================
+      // SECTION 3: UTILITY
+      // =========================================
+      const Utils = {
+        checkRectCollide: (x, y, rect) => {
+          return (
+            x > rect.x - State.player.size &&
+            x < rect.x + rect.w + State.player.size &&
+            y > rect.y - State.player.size &&
+            y < rect.y + rect.h + State.player.size
+          );
+        },
+        rayCast: (x1, y1, x2, y2) => {
+          for (let s of State.world.structures) {
+            let minX = Math.min(x1, x2),
+              maxX = Math.max(x1, x2),
+              minY = Math.min(y1, y2),
+              maxY = Math.max(y1, y2);
+            if (
+              maxX < s.x ||
+              minX > s.x + s.w ||
+              maxY < s.y ||
+              minY > s.y + s.h
+            )
+              continue;
+            let dist = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+            let steps = dist / 20;
+            let dx = (x2 - x1) / steps;
+            let dy = (y2 - y1) / steps;
+            for (let i = 0; i < steps; i++) {
+              let cx = x1 + dx * i;
+              let cy = y1 + dy * i;
+              if (cx > s.x && cx < s.x + s.w && cy > s.y && cy < s.y + s.h)
+                return { hit: true, x: cx, y: cy };
+            }
+          }
+          return { hit: false, x: x2, y: y2 };
+        },
+      };
+
+      // =========================================
+      // SECTION 4: TERMINAL SYSTEM
+      // =========================================
+      const TerminalSystem = {
+        init: () => {
+          for (let i = 1; i <= 5; i++) {
+            const el = document.getElementById(`slot-${i}`);
+            if (el) el.innerText = State.hotbar[i] || "";
+          }
+        },
+        toggle: () => {
+          State.player.isTerminalOpen = !State.player.isTerminalOpen;
+          document.getElementById("terminal-wrapper").classList.toggle("open");
+
+          if (State.player.isTerminalOpen) {
+            setTimeout(() => document.getElementById("term-input").focus(), 50);
+          } else {
+            document.getElementById("term-input").blur();
+          }
+        },
+        print: (msg, color) => {
+          const d = document.createElement("div");
+          d.style.color = color;
+          d.innerText = msg;
+          document.getElementById("term-output").appendChild(d);
+          const out = document.getElementById("term-output");
+          out.scrollTop = out.scrollHeight;
+        },
+        log: (msg, type = "new") => {
+          const l = document.getElementById("system-log");
+          const d = document.createElement("div");
+          d.className = `log-entry ${type}`;
+          d.innerText = "> " + msg;
+          l.appendChild(d);
+          if (l.children.length > 6) l.removeChild(l.firstChild);
+          setTimeout(() => d.classList.remove(type), 3000);
+        },
+        execute: (cmdName, args = []) => {
+          const cmd = TerminalSystem.commands[cmdName];
+          if (cmd) cmd(args);
+          else TerminalSystem.print(`ERR: UNKNOWN CMD "${cmdName}"`, "#f33");
+        },
+        commands: {
+          "/help": () => {
+            TerminalSystem.print("--- COMMAND LIST ---", "#fff");
+            // Context Sensitive Help
+            if (State.player.mode === "roam") {
+              TerminalSystem.print(
+                "  sys.scan        Reveal Loot (50 MB)",
+                "#ccc"
+              );
+              TerminalSystem.print(
+                "  /bind [key] [cmd]  Assign Hotkey",
+                "#ccc"
+              );
+            } else {
+              TerminalSystem.print(
+                "  sys.cloak       Invisibility (20 MB)",
+                "#fcc"
+              );
+              TerminalSystem.print(
+                "  exe.repair      Restore 50 HP (100 MB)",
+                "#fcc"
+              );
+            }
+            TerminalSystem.print("  /cls            Clear Terminal", "#888");
+          },
+          "/cls": () => {
+            document.getElementById("term-output").innerHTML = "";
+          },
+          "/bind": (args) => {
+            const key = args[0];
+            const cmd = args[1];
+            if (State.hotbar[key] !== undefined) {
+              State.hotbar[key] = cmd;
+              document.getElementById(`slot-${key}`).innerText = cmd;
+              TerminalSystem.print(`MACRO: [${key}] -> ${cmd}`, "#0ff");
+            } else TerminalSystem.print("ERR: INVALID KEY (1-5)", "#f33");
+          },
+          "sys.scan": () => {
+            if (State.player.data >= 50) {
+              State.player.data -= 50;
+              State.player.scanActive = true;
+              State.player.scanTimer = 600;
+              TerminalSystem.log("SCAN ACTIVE");
+            } else TerminalSystem.log("ERR: 50 DATA NEEDED", "error");
+          },
+          "sys.cloak": () => {
+            if (State.player.data >= 20) {
+              State.player.data -= 20;
+              State.player.cloaked = true;
+              State.player.cloakTimer = 300;
+              TerminalSystem.log("CLOAK ACTIVE");
+            } else TerminalSystem.log("ERR: 20 DATA NEEDED", "error");
+          },
+          "exe.repair": () => {
+            if (State.player.data >= 100) {
+              State.player.data -= 100;
+              State.player.health = Math.min(100, State.player.health + 50);
+              TerminalSystem.log("REPAIR DONE");
+            } else TerminalSystem.log("ERR: 100 DATA NEEDED", "error");
+          },
+        },
+      };
+
+      // =========================================
+      // SECTION 5: INPUT SYSTEM
+      // =========================================
+      const InputSystem = {
+        init: () => {
+          window.addEventListener("resize", () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+          });
+
+          window.addEventListener("keydown", (e) => {
+            if (e.key === "Tab") {
+              e.preventDefault();
+              TerminalSystem.toggle();
+              return;
+            }
+            if (e.key.toLowerCase() === "x") GameLogic.toggleProfile();
+
+            if (
+              State.input.keys[e.key] !== undefined &&
+              !State.player.isTerminalOpen
+            )
+              State.input.keys[e.key] = true;
+
+            // FIX: Allow Hotbar keys 1-5 in both modes
+            if (
+              ["1", "2", "3", "4", "5"].includes(e.key) &&
+              State.hotbar[e.key]
+            ) {
+              TerminalSystem.execute(State.hotbar[e.key]);
+            }
+
+            if (e.key === "Enter" && State.player.isTerminalOpen) {
+              const term = document.getElementById("term-input");
+              const val = term.value.trim();
+              if (val) {
+                TerminalSystem.print("> " + val, "#888");
+                const parts = val.split(" ");
+                TerminalSystem.execute(parts[0], parts.slice(1));
+                term.value = "";
+              }
+            }
+          });
+
+          window.addEventListener("keyup", (e) => {
+            if (State.input.keys[e.key] !== undefined)
+              State.input.keys[e.key] = false;
+          });
+
+          window.addEventListener("mousedown", (e) => {
+            if (State.player.mode === "combat" && !State.player.isDead) {
+              GameLogic.spawnPlayerProjectile(e.clientX, e.clientY);
+            }
+          });
+        },
+      };
+
+      // =========================================
+      // SECTION 6: GAME LOGIC
+      // =========================================
+      const GameLogic = {
+        init: () => {
+          State.player.x = 0;
+          State.player.y = 0;
+          State.player.health = 100;
+          State.player.data = 0;
+          State.player.isDead = false;
+          // FIX: Respawn always in Roam Mode
+          State.player.mode = "roam";
+          document.body.className = "mode-roam";
+          State.world = {
+            structures: [],
+            fragments: [],
+            enemies: [],
+            projectiles: [],
+          };
+
+          for (let i = 0; i < 80; i++) {
+            let x = Math.random() * 4000 - 2000;
+            let y = Math.random() * 4000 - 2000;
+            if (Math.sqrt(x * x + y * y) > Config.safeZone)
+              State.world.structures.push({
+                x,
+                y,
+                w: Math.random() * 100 + 40,
+                h: Math.random() * 100 + 40,
+              });
+          }
+          for (let i = 0; i < 60; i++) {
+            let x = Math.random() * 4000 - 2000;
+            let y = Math.random() * 4000 - 2000;
+            State.world.fragments.push({ x, y, size: 8, active: true });
+          }
+          let attempts = 0;
+          while (State.world.enemies.length < 8 && attempts < 1000) {
+            attempts++;
+            let x = Math.random() * 3000 - 1500;
+            let y = Math.random() * 3000 - 1500;
+            if (Math.sqrt(x * x + y * y) < Config.safeZone + 300) continue;
+            let tooClose = false;
+            for (let e of State.world.enemies)
+              if (Math.sqrt((x - e.x) ** 2 + (y - e.y) ** 2) < 300)
+                tooClose = true;
+            if (!tooClose)
+              State.world.enemies.push({
+                x,
+                y,
+                targetX: x,
+                targetY: y,
+                angle: 0,
+                speed: 1.2,
+                state: "patrol",
+                sightRange: 350,
+                sightAngle: 0.6,
+                hp: Config.combat.enemyHP,
+                cooldown: 0,
+              });
+          }
+
+          UISystem.bootSequence();
+        },
+
+        toggleProfile: () => {
+          if (State.player.isTerminalOpen) return;
+          if (State.player.mode === "roam") {
+            State.player.mode = "combat";
+            document.body.className = "mode-combat";
+            document.getElementById("profile-indicator").innerText =
+              "PROFILE: ATTACK/DEFENSE";
+            TerminalSystem.log("COMBAT PROFILE ENGAGED");
+          } else {
+            State.player.mode = "roam";
+            document.body.className = "mode-roam";
+            document.getElementById("profile-indicator").innerText =
+              "PROFILE: ROAMING";
+            TerminalSystem.log("ROAMING PROFILE");
+          }
+        },
+
+        spawnPlayerProjectile: (mouseX, mouseY) => {
+          if (State.player.data >= Config.combat.bulletCost) {
+            State.player.data -= Config.combat.bulletCost;
+            const rect = canvas.getBoundingClientRect();
+            const mx = mouseX - rect.left;
+            const my = mouseY - rect.top;
+            const angle = Math.atan2(
+              my - canvas.height / 2,
+              mx - canvas.width / 2
+            );
+            State.world.projectiles.push({
+              x: State.player.x,
+              y: State.player.y,
+              vx: Math.cos(angle) * Config.combat.bulletSpeed,
+              vy: Math.sin(angle) * Config.combat.bulletSpeed,
+              type: "player",
+              life: 100,
+            });
+          } else TerminalSystem.log("ERR: NO DATA", "error");
+        },
+
+        update: () => {
+          if (State.player.isDead) return;
+          const timeScale = State.player.isTerminalOpen ? 0.1 : 1.0;
+
+          let speedMod = State.player.mode === "combat" ? 0.7 : 1.0;
+          if (State.input.keys.w)
+            State.player.vy -= Config.player.accel * timeScale * speedMod;
+          if (State.input.keys.s)
+            State.player.vy += Config.player.accel * timeScale * speedMod;
+          if (State.input.keys.a)
+            State.player.vx -= Config.player.accel * timeScale * speedMod;
+          if (State.input.keys.d)
+            State.player.vx += Config.player.accel * timeScale * speedMod;
+
+          State.player.vx *= Config.player.friction;
+          State.player.vy *= Config.player.friction;
+          let nextX = State.player.x + State.player.vx * timeScale;
+          let nextY = State.player.y + State.player.vy * timeScale;
+
+          for (let s of State.world.structures) {
+            if (Utils.checkRectCollide(nextX, State.player.y, s)) {
+              State.player.vx *= -0.5;
+              nextX = State.player.x;
+            }
+            if (Utils.checkRectCollide(nextX, nextY, s)) {
+              State.player.vy *= -0.5;
+              nextY = State.player.y;
+            }
+          }
+          State.player.x = nextX;
+          State.player.y = nextY;
+
+          // Looting enabled in BOTH modes now
+          State.world.fragments.forEach((f) => {
+            if (
+              f.active &&
+              Math.sqrt(
+                (State.player.x - f.x) ** 2 + (State.player.y - f.y) ** 2
+              ) < 20
+            ) {
+              f.active = false;
+              State.player.data += 10;
+              TerminalSystem.log("DATA: +10 MB");
+            }
+          });
+
+          if (State.player.cloaked)
+            if (--State.player.cloakTimer <= 0) State.player.cloaked = false;
+          if (State.player.scanActive) State.player.scanTimer--;
+
+          if (timeScale > 0) {
+            GameLogic.updateEnemies(timeScale);
+            GameLogic.updateProjectiles(timeScale);
+          }
+        },
+
+        updateEnemies: (dt) => {
+          State.world.enemies.forEach((en) => {
+            if (en.cooldown > 0) en.cooldown -= dt;
+            if (en.state === "patrol") {
+              let dx = en.targetX - en.x,
+                dy = en.targetY - en.y;
+              let dist = Math.sqrt(dx * dx + dy * dy);
+              let nextEX = en.x + (dx / dist) * en.speed * dt,
+                nextEY = en.y + (dy / dist) * en.speed * dt;
+              let blocked = false;
+              for (let s of State.world.structures)
+                if (
+                  nextEX > s.x &&
+                  nextEX < s.x + s.w &&
+                  nextEY > s.y &&
+                  nextEY < s.y + s.h
+                )
+                  blocked = true;
+              if (dist < 10 || blocked) {
+                en.targetX = en.x + Math.random() * 800 - 400;
+                en.targetY = en.y + Math.random() * 800 - 400;
+              } else {
+                en.x = nextEX;
+                en.y = nextEY;
+                let tAng = Math.atan2(dy, dx);
+                let diff = tAng - en.angle;
+                while (diff <= -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                en.angle += diff * 0.1 * dt;
+              }
+            }
+            if (!State.player.cloaked) {
+              let pdx = State.player.x - en.x,
+                pdy = State.player.y - en.y;
+              let pDist = Math.sqrt(pdx * pdx + pdy * pdy);
+              let pAngle = Math.atan2(pdy, pdx);
+              let angleDiff = pAngle - en.angle;
+              while (angleDiff <= -Math.PI) angleDiff += Math.PI * 2;
+              while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+              if (
+                pDist < en.sightRange &&
+                Math.abs(angleDiff) < en.sightAngle
+              ) {
+                let hit = Utils.rayCast(
+                  en.x,
+                  en.y,
+                  State.player.x,
+                  State.player.y
+                );
+                if (!hit.hit) {
+                  en.state = "attack";
+                  en.angle = pAngle;
+                } else en.state = "patrol";
+              } else en.state = "patrol";
+            } else en.state = "patrol";
+            if (en.state === "attack" && en.cooldown <= 0) {
+              State.world.projectiles.push({
+                x: en.x,
+                y: en.y,
+                vx: Math.cos(en.angle) * 6,
+                vy: Math.sin(en.angle) * 6,
+                type: "enemy",
+                life: 100,
+              });
+              en.cooldown = 40;
+            }
+          });
+        },
+
+        updateProjectiles: (dt) => {
+          for (let i = State.world.projectiles.length - 1; i >= 0; i--) {
+            let p = State.world.projectiles[i];
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.life -= dt;
+            let hitWall = false;
+            for (let s of State.world.structures) {
+              if (p.x > s.x && p.x < s.x + s.w && p.y > s.y && p.y < s.y + s.h)
+                hitWall = true;
+            }
+            if (hitWall || p.life <= 0) {
+              State.world.projectiles.splice(i, 1);
+              continue;
+            }
+            if (p.type === "enemy") {
+              if (
+                Math.sqrt(
+                  (p.x - State.player.x) ** 2 + (p.y - State.player.y) ** 2
+                ) <
+                State.player.size + 2
+              ) {
+                State.player.health -= Config.combat.enemyDamage;
+                TerminalSystem.log("WARNING: HULL DAMAGE", "error");
+                if (State.player.health <= 0) GameLogic.killPlayer();
+                State.world.projectiles.splice(i, 1);
+                continue;
+              }
+            }
+            if (p.type === "player") {
+              for (let j = State.world.enemies.length - 1; j >= 0; j--) {
+                let e = State.world.enemies[j];
+                if (Math.sqrt((p.x - e.x) ** 2 + (p.y - e.y) ** 2) < 15) {
+                  e.hp--;
+                  State.world.projectiles.splice(i, 1);
+                  if (e.hp <= 0) {
+                    State.world.enemies.splice(j, 1);
+                    TerminalSystem.log("TARGET ELIMINATED");
+                    State.player.data += 50;
+                  }
+                  break;
+                }
+              }
+            }
+          }
+        },
+
+        killPlayer: () => {
+          State.player.isDead = true;
+          State.player.health = 0;
+          const overlay = document.getElementById("overlay-screen");
+          document.getElementById("overlay-text").innerText =
+            "FATAL ERROR\nSOURCE DECOMPILED";
+          document.getElementById("overlay-text").style.color = "#ff3333";
+          overlay.style.opacity = 1;
+          setTimeout(GameLogic.init, 3000);
+        },
+      };
+
+      // =========================================
+      // SECTION 7: RENDER SYSTEM
+      // =========================================
+      const RenderSystem = {
+        draw: () => {
+          ctx.fillStyle = "#050505";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const cx = canvas.width / 2,
+            cy = canvas.height / 2;
+          ctx.save();
+          ctx.translate(cx - State.player.x, cy - State.player.y);
+
+          const sc = Math.floor((State.player.x - cx) / Config.gridSize),
+            ec = Math.floor((State.player.x + cx) / Config.gridSize) + 1;
+          const sr = Math.floor((State.player.y - cy) / Config.gridSize),
+            er = Math.floor((State.player.y + cy) / Config.gridSize) + 1;
+          ctx.strokeStyle = Config.colors.grid;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (
+            let x = sc * Config.gridSize;
+            x <= ec * Config.gridSize;
+            x += Config.gridSize
+          ) {
+            ctx.moveTo(x, State.player.y - cy);
+            ctx.lineTo(x, State.player.y + cy);
+          }
+          for (
+            let y = sr * Config.gridSize;
+            y <= er * Config.gridSize;
+            y += Config.gridSize
+          ) {
+            ctx.moveTo(State.player.x - cx, y);
+            ctx.lineTo(State.player.x + cx, y);
+          }
+          ctx.stroke();
+
+          State.world.projectiles.forEach((p) => {
+            ctx.fillStyle = p.type === "player" ? "#ffff00" : "#ff0000";
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = ctx.fillStyle;
+            ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+            ctx.shadowBlur = 0;
+          });
+
+          ctx.fillStyle = Config.colors.wall;
+          State.world.structures.forEach((s) => {
+            if (
+              s.x + s.w > State.player.x - cx &&
+              s.x < State.player.x + cx &&
+              s.y + s.h > State.player.y - cy &&
+              s.y < State.player.y + cy
+            )
+              ctx.fillRect(s.x, s.y, s.w, s.h);
+          });
+
+          State.world.fragments.forEach((f) => {
+            if (
+              f.active &&
+              f.x > State.player.x - cx &&
+              f.x < State.player.x + cx &&
+              f.y > State.player.y - cy &&
+              f.y < State.player.y + cy
+            ) {
+              ctx.fillStyle = Config.colors.fragment;
+              ctx.shadowBlur = 10;
+              ctx.shadowColor = Config.colors.fragment;
+              ctx.fillRect(f.x - 4, f.y - 4, 8, 8);
+            }
+          });
+          ctx.shadowBlur = 0;
+
+          State.world.enemies.forEach((en) => {
+            if (
+              en.x > State.player.x - cx - 400 &&
+              en.x < State.player.x + cx + 400 &&
+              en.y > State.player.y - cy - 400
+            ) {
+              ctx.fillStyle =
+                en.state === "attack"
+                  ? "rgba(255,0,0,0.5)"
+                  : "rgba(255, 50, 50, 0.2)";
+              ctx.beginPath();
+              ctx.moveTo(en.x, en.y);
+              for (
+                let r = -en.sightAngle;
+                r <= en.sightAngle;
+                r += en.sightAngle / 2
+              ) {
+                let ra = en.angle + r;
+                let tx = en.x + Math.cos(ra) * en.sightRange;
+                let ty = en.y + Math.sin(ra) * en.sightRange;
+                let hit = Utils.rayCast(en.x, en.y, tx, ty);
+                ctx.lineTo(hit.x, hit.y);
+              }
+              ctx.fill();
+              ctx.fillStyle = Config.colors.enemy;
+              ctx.save();
+              ctx.translate(en.x, en.y);
+              ctx.rotate(en.angle);
+              ctx.beginPath();
+              ctx.moveTo(10, 0);
+              ctx.lineTo(-10, 8);
+              ctx.lineTo(-10, -8);
+              ctx.fill();
+              ctx.restore();
+            }
+          });
+
+          if (!State.player.isDead) {
+            ctx.globalAlpha = State.player.cloaked ? 0.3 : 1.0;
+            ctx.fillStyle =
+              State.player.mode === "combat" ? "#ffaa00" : "#ffffff";
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = ctx.fillStyle;
+            ctx.beginPath();
+            ctx.arc(
+              State.player.x,
+              State.player.y,
+              State.player.size,
+              0,
+              Math.PI * 2
+            );
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1.0;
+            if (State.player.mode === "combat") {
+              ctx.strokeStyle = "#ff3333";
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.arc(
+                State.player.x,
+                State.player.y,
+                State.player.size + 10,
+                0,
+                Math.PI * 2
+              );
+              ctx.stroke();
+            }
+          } else {
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(
+              State.player.x,
+              State.player.y,
+              State.player.size,
+              0,
+              Math.PI * 2
+            );
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          let hf = State.player.isDead
+            ? 0
+            : Math.max(0.1, State.player.health / 100);
+          let r = Config.baseLightRadius * hf;
+          let g = ctx.createRadialGradient(
+            cx,
+            cy,
+            State.player.isDead ? 1 : State.player.size + 10,
+            cx,
+            cy,
+            r
+          );
+          g.addColorStop(0, "rgba(0,0,0,0)");
+          g.addColorStop(1, "rgba(0,0,0,1)");
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          UISystem.update();
+          RenderSystem.drawMiniMap();
+        },
+
+        drawMiniMap: () => {
+          miniCtx.fillStyle = "#000";
+          miniCtx.fillRect(0, 0, 140, 140);
+          const s = 0.05,
+            cx = 70,
+            cy = 70;
+
+          miniCtx.fillStyle = "#f33";
+          State.world.enemies.forEach((e) => {
+            let rx = (e.x - State.player.x) * s,
+              ry = (e.y - State.player.y) * s;
+            if (Math.abs(rx) < 70 && Math.abs(ry) < 70)
+              miniCtx.fillRect(cx + rx, cy + ry, 3, 3);
+          });
+          miniCtx.fillStyle = "#444";
+          State.world.structures.forEach((st) => {
+            let rx = (st.x - State.player.x) * s,
+              ry = (st.y - State.player.y) * s;
+            if (Math.abs(rx) < 70 && Math.abs(ry) < 70)
+              miniCtx.fillRect(cx + rx, cy + ry, st.w * s, st.h * s);
+          });
+
+          // FIX: Loot visible in BOTH modes if scanned
+          if (State.player.scanActive) {
+            miniCtx.fillStyle = Config.colors.fragment;
+            State.world.fragments.forEach((f) => {
+              if (f.active) {
+                let rx = (f.x - State.player.x) * s,
+                  ry = (f.y - State.player.y) * s;
+                if (Math.abs(rx) < 70 && Math.abs(ry) < 70)
+                  miniCtx.fillRect(cx + rx, cy + ry, 2, 2);
+              }
+            });
+          }
+          miniCtx.fillStyle = State.player.mode === "combat" ? "#f00" : "#fff";
+          miniCtx.beginPath();
+          miniCtx.arc(cx, cy, 2, 0, Math.PI * 2);
+          miniCtx.fill();
+        },
+      };
+
+      // =========================================
+      // SECTION 8: UI SYSTEM
+      // =========================================
+      const UISystem = {
+        update: () => {
+          document.getElementById(
+            "coords-display"
+          ).innerText = `LOC: [${Math.floor(State.player.x)}, ${Math.floor(
+            State.player.y
+          )}]`;
+          document.getElementById(
+            "data-bank"
+          ).innerText = `DATA: ${State.player.data} MB`;
+          document.getElementById(
+            "bar-health"
+          ).style.width = `${State.player.health}%`;
+          document.getElementById(
+            "bar-light"
+          ).style.width = `${State.player.health}%`;
+        },
+        toggleMenu: () => {
+          document.getElementById("menu-dropdown").classList.toggle("show");
+        },
+        bootSequence: () => {
+          const overlay = document.getElementById("overlay-screen");
+          overlay.style.opacity = 1;
+          document.getElementById("overlay-text").innerText =
+            "SYSTEM REBOOT...";
+          document.getElementById("overlay-text").style.color = "#00f3ff";
+          setTimeout(() => {
+            overlay.style.opacity = 0;
+            document.getElementById("ui-layer").classList.add("active");
+            TerminalSystem.log("SYSTEM ONLINE");
+            TerminalSystem.init();
+          }, 2000);
+        },
+      };
+
+      // =========================================
+      // SECTION 9: MAIN EXECUTION
+      // =========================================
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      GameLogic.init();
+      InputSystem.init();
+
+      function loop() {
+        GameLogic.update();
+        RenderSystem.draw();
+        requestAnimationFrame(loop);
+      }
+      loop();
+    </script>
+  </body>
+</html>
