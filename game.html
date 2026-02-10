@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Project: SOURCE CODE // Phase 9</title>
+    <title>0110: CHAPTER 2 // NULL</title>
     <style>
       /* =========================================
            1. CORE STYLES & VARIABLES
@@ -12,8 +12,8 @@
         --primary: #00f3ff;
         --combat: #ff3333;
         --terminal: #00ff00;
-        --passive: #888888; /* New Monochrome Color */
-        --bg-glass: rgba(5, 10, 15, 0.9);
+        --passive: #888888;
+        --bg-glass: rgba(5, 10, 15, 0.95);
         --margin: 30px;
         --hud-color: var(--primary);
       }
@@ -49,7 +49,7 @@
         height: 100%;
         pointer-events: none;
         opacity: 0;
-        transition: opacity 1s;
+        transition: opacity 2s;
       }
       #ui-layer.active {
         opacity: 1;
@@ -57,6 +57,43 @@
       .hud-element {
         pointer-events: auto;
         position: absolute;
+      }
+      .hidden {
+        display: none !important;
+      }
+
+      /* CINEMATIC INTRO */
+      #cinematic-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: black;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+      }
+      .title-text {
+        font-size: 80px;
+        font-weight: bold;
+        letter-spacing: 15px;
+        opacity: 0;
+        transition: opacity 2s;
+        text-shadow: 0 0 30px white;
+        text-align: center;
+      }
+      .subtitle-text {
+        font-size: 24px;
+        letter-spacing: 8px;
+        color: var(--primary);
+        margin-top: 20px;
+        opacity: 0;
+        transition: opacity 2s;
+        text-align: center;
       }
 
       /* =========================================
@@ -217,7 +254,6 @@
         border: 1px solid #444;
       }
 
-      /* Dynamic Bar Colors based on Mode */
       #bar-health {
         height: 100%;
         width: 100%;
@@ -229,7 +265,6 @@
         transition: width 0.2s, background 0.3s, box-shadow 0.3s;
       }
 
-      /* Roam Mode: Monochrome */
       body.mode-roam #bar-health {
         background: var(--passive);
         box-shadow: none;
@@ -238,7 +273,6 @@
         background: #ccc;
         box-shadow: 0 0 5px #ccc;
       }
-      /* Combat Mode: Active Colors */
       body.mode-combat #bar-health {
         background: var(--combat);
         box-shadow: 0 0 8px var(--combat);
@@ -255,15 +289,14 @@
         color: #aaa;
       }
 
-      /* Hotbar Layout Fix */
       #hotbar {
         display: flex;
         gap: 5px;
         transition: opacity 0.3s;
-        width: 100%; /* Match the 500px parent */
+        width: 100%;
       }
       .slot {
-        flex: 1; /* Stretch to fill space */
+        flex: 1;
         height: 45px;
         background: rgba(20, 20, 20, 0.6);
         border: 1px solid #444;
@@ -376,6 +409,7 @@
         flex-direction: column;
         transition: opacity 1s;
         pointer-events: none;
+        opacity: 0;
       }
       #overlay-text {
         font-size: 20px;
@@ -385,12 +419,17 @@
     </style>
   </head>
   <body class="mode-roam">
+    <div id="cinematic-overlay">
+      <div id="intro-sub" class="subtitle-text">ENTERING</div>
+      <div id="intro-title" class="title-text">NULL</div>
+    </div>
+
     <div id="overlay-screen">
-      <div id="overlay-text">SYSTEM BOOT...</div>
+      <div id="overlay-text">SYSTEM FAILURE</div>
     </div>
 
     <div id="ui-layer">
-      <div id="profile-indicator">PROFILE: ROAMING</div>
+      <div id="profile-indicator" class="hidden">PROFILE: ROAMING</div>
 
       <div id="hud-top-left" class="hud-element">
         <div id="system-log"></div>
@@ -455,7 +494,7 @@
 
       <div id="hud-bottom-right" class="hud-element">
         <div id="terminal-wrapper">
-          <div class="term-header">USER_TERMINAL</div>
+          <div class="term-header">USER_TERMINAL // NULL_ACCESS</div>
           <div id="term-output"></div>
           <div id="term-input-line">
             <span style="color: #0f0; margin-right: 10px">></span>
@@ -474,8 +513,8 @@
       // =========================================
       const Config = {
         gridSize: 60,
-        baseLightRadius: 350,
-        safeZone: 400,
+        baseLightRadius: 300,
+        safeZone: 0,
         colors: {
           grid: "#222",
           wall: "#fff",
@@ -498,7 +537,9 @@
           size: 10,
           health: 100,
           data: 0,
+          lightLevel: 1.0,
           mode: "roam",
+          combatUnlocked: false, // Starts locked
           cloaked: false,
           cloakTimer: 0,
           isTerminalOpen: false,
@@ -507,7 +548,7 @@
           isDead: false,
         },
         world: { structures: [], fragments: [], enemies: [], projectiles: [] },
-        hotbar: { 1: "sys.scan", 2: "sys.cloak", 3: null, 4: null, 5: null },
+        hotbar: { 1: "sys.scan", 2: null, 3: null, 4: null, 5: null },
         input: { keys: { w: false, a: false, s: false, d: false } },
       };
 
@@ -520,6 +561,7 @@
       // SECTION 3: UTILITY
       // =========================================
       const Utils = {
+        wait: (ms) => new Promise((r) => setTimeout(r, ms)),
         checkRectCollide: (x, y, rect) => {
           return (
             x > rect.x - State.player.size &&
@@ -565,6 +607,10 @@
             const el = document.getElementById(`slot-${i}`);
             if (el) el.innerText = State.hotbar[i] || "";
           }
+          TerminalSystem.print("SYSTEM: NULL", "#fff");
+          TerminalSystem.print("STATUS: UNREGISTERED SPACE", "#888");
+          TerminalSystem.print("Type /help to see available commands.", "#fff");
+          TerminalSystem.print("Press Tab to open/close Terminal.", "#fff");
         },
         toggle: () => {
           State.player.isTerminalOpen = !State.player.isTerminalOpen;
@@ -601,15 +647,18 @@
         commands: {
           "/help": () => {
             TerminalSystem.print("--- COMMAND LIST ---", "#fff");
-            // Context Sensitive Help
-            if (State.player.mode === "roam") {
+            TerminalSystem.print(
+              "  sys.scan        Reveal Loot (50 MB)",
+              "#ccc"
+            );
+            TerminalSystem.print(
+              "  sys.lumos       Enhance Light (50 MB)",
+              "#ccc"
+            );
+            if (!State.player.combatUnlocked) {
               TerminalSystem.print(
-                "  sys.scan        Reveal Loot (50 MB)",
-                "#ccc"
-              );
-              TerminalSystem.print(
-                "  /bind [key] [cmd]  Assign Hotkey",
-                "#ccc"
+                "  sys.compile combat  Unlock Weapon (50 MB)",
+                "#bd00ff"
               );
             } else {
               TerminalSystem.print(
@@ -621,7 +670,7 @@
                 "#fcc"
               );
             }
-            TerminalSystem.print("  /cls            Clear Terminal", "#888");
+            TerminalSystem.print("  /bind [key] [cmd]  Assign Hotkey", "#888");
           },
           "/cls": () => {
             document.getElementById("term-output").innerHTML = "";
@@ -643,7 +692,34 @@
               TerminalSystem.log("SCAN ACTIVE");
             } else TerminalSystem.log("ERR: 50 DATA NEEDED", "error");
           },
+          "sys.lumos": () => {
+            if (State.player.data >= 50) {
+              State.player.data -= 50;
+              State.player.lightLevel += 0.3;
+              TerminalSystem.log("LIGHT LEVEL INCREASED");
+            } else TerminalSystem.log("ERR: 50 DATA NEEDED", "error");
+          },
+          "sys.compile": (args) => {
+            if (args[0] === "combat") {
+              if (State.player.combatUnlocked) {
+                TerminalSystem.print("ERR: ALREADY COMPILED", "#f33");
+                return;
+              }
+              if (State.player.data >= 50) {
+                State.player.data -= 50;
+                State.player.combatUnlocked = true;
+                // Trigger the World Change
+                TerminalSystem.log("COMPILING WEAPONRY...", "new");
+                setTimeout(() => {
+                  GameLogic.triggerCombatEvent();
+                }, 1000);
+              } else TerminalSystem.log("ERR: 50 DATA NEEDED", "error");
+            } else {
+              TerminalSystem.print("ERR: INVALID ARGUMENT", "#f33");
+            }
+          },
           "sys.cloak": () => {
+            if (!State.player.combatUnlocked) return;
             if (State.player.data >= 20) {
               State.player.data -= 20;
               State.player.cloaked = true;
@@ -652,6 +728,7 @@
             } else TerminalSystem.log("ERR: 20 DATA NEEDED", "error");
           },
           "exe.repair": () => {
+            if (!State.player.combatUnlocked) return;
             if (State.player.data >= 100) {
               State.player.data -= 100;
               State.player.health = Math.min(100, State.player.health + 50);
@@ -677,7 +754,15 @@
               TerminalSystem.toggle();
               return;
             }
-            if (e.key.toLowerCase() === "x") GameLogic.toggleProfile();
+
+            // Only toggle profile if combat is unlocked
+            if (e.key.toLowerCase() === "x") {
+              if (State.player.combatUnlocked) {
+                GameLogic.toggleProfile();
+              } else {
+                TerminalSystem.log("ERR: COMBAT MODULE MISSING", "error");
+              }
+            }
 
             if (
               State.input.keys[e.key] !== undefined &&
@@ -685,12 +770,15 @@
             )
               State.input.keys[e.key] = true;
 
-            // FIX: Allow Hotbar keys 1-5 in both modes
+            // FIX: Allow Hotbar keys 1-5
             if (
               ["1", "2", "3", "4", "5"].includes(e.key) &&
               State.hotbar[e.key]
             ) {
-              TerminalSystem.execute(State.hotbar[e.key]);
+              TerminalSystem.execute(
+                State.hotbar[e.key].split(" ")[0],
+                State.hotbar[e.key].split(" ").slice(1)
+              );
             }
 
             if (e.key === "Enter" && State.player.isTerminalOpen) {
@@ -711,7 +799,11 @@
           });
 
           window.addEventListener("mousedown", (e) => {
-            if (State.player.mode === "combat" && !State.player.isDead) {
+            if (
+              State.player.mode === "combat" &&
+              !State.player.isDead &&
+              State.player.combatUnlocked
+            ) {
               GameLogic.spawnPlayerProjectile(e.clientX, e.clientY);
             }
           });
@@ -722,15 +814,26 @@
       // SECTION 6: GAME LOGIC
       // =========================================
       const GameLogic = {
-        init: () => {
+        init: async () => {
+          // 1. Persistence Check
+          const savedData = localStorage.getItem("0110_save");
+          if (savedData) {
+            const parsed = JSON.parse(savedData);
+            State.player.data = parsed.data || 0;
+            State.player.lightLevel = parsed.lightLevel || 1.0;
+          }
+
+          // 2. State Reset
           State.player.x = 0;
           State.player.y = 0;
           State.player.health = 100;
-          State.player.data = 0;
           State.player.isDead = false;
-          // FIX: Respawn always in Roam Mode
           State.player.mode = "roam";
+          State.player.combatUnlocked = false; // Reset lock
+
           document.body.className = "mode-roam";
+
+          // 3. World Gen (Start Empty)
           State.world = {
             structures: [],
             fragments: [],
@@ -738,10 +841,47 @@
             projectiles: [],
           };
 
+          // Only spawn loot initially (The Void)
+          for (let i = 0; i < 60; i++) {
+            let x = Math.random() * 4000 - 2000;
+            let y = Math.random() * 4000 - 2000;
+            State.world.fragments.push({ x, y, size: 8, active: true });
+          }
+
+          // 4. Play Intro
+          const title = document.getElementById("intro-title");
+          const sub = document.getElementById("intro-sub");
+          const overlay = document.getElementById("cinematic-overlay");
+
+          await Utils.wait(500);
+          title.style.opacity = 1;
+          sub.style.opacity = 1;
+          await Utils.wait(2500);
+          title.style.opacity = 0;
+          sub.style.opacity = 0;
+          await Utils.wait(1000);
+          overlay.style.opacity = 0;
+          document.getElementById("ui-layer").classList.add("active");
+          TerminalSystem.init();
+        },
+
+        triggerCombatEvent: () => {
+          // Generate World
+          TerminalSystem.print("WARNING: ARCHITECTURE RE-WRITTEN", "#ff3333");
+          TerminalSystem.print(">> HOSTILES DETECTED", "#ff3333");
+
+          // Unlock UI
+          document
+            .getElementById("profile-indicator")
+            .classList.remove("hidden");
+          TerminalSystem.log("PRESS 'X' FOR COMBAT MODE");
+
+          // Generate Structures (Ruins)
           for (let i = 0; i < 80; i++) {
             let x = Math.random() * 4000 - 2000;
             let y = Math.random() * 4000 - 2000;
-            if (Math.sqrt(x * x + y * y) > Config.safeZone)
+            if (Math.sqrt(x * x + y * y) > 300)
+              // Keep spawn clear
               State.world.structures.push({
                 x,
                 y,
@@ -749,21 +889,20 @@
                 h: Math.random() * 100 + 40,
               });
           }
-          for (let i = 0; i < 60; i++) {
-            let x = Math.random() * 4000 - 2000;
-            let y = Math.random() * 4000 - 2000;
-            State.world.fragments.push({ x, y, size: 8, active: true });
-          }
+
+          // Generate Enemies (Watchers)
           let attempts = 0;
           while (State.world.enemies.length < 8 && attempts < 1000) {
             attempts++;
             let x = Math.random() * 3000 - 1500;
             let y = Math.random() * 3000 - 1500;
-            if (Math.sqrt(x * x + y * y) < Config.safeZone + 300) continue;
+            if (Math.sqrt(x * x + y * y) < 500) continue; // Safe zone
+
             let tooClose = false;
             for (let e of State.world.enemies)
               if (Math.sqrt((x - e.x) ** 2 + (y - e.y) ** 2) < 300)
                 tooClose = true;
+
             if (!tooClose)
               State.world.enemies.push({
                 x,
@@ -779,8 +918,6 @@
                 cooldown: 0,
               });
           }
-
-          UISystem.bootSequence();
         },
 
         toggleProfile: () => {
@@ -826,6 +963,8 @@
           const timeScale = State.player.isTerminalOpen ? 0.1 : 1.0;
 
           let speedMod = State.player.mode === "combat" ? 0.7 : 1.0;
+          // Apply slight "ghostly" glide friction logic from lore?
+          // Keeping standard movement for now to match Chapter 1 physics feel
           if (State.input.keys.w)
             State.player.vy -= Config.player.accel * timeScale * speedMod;
           if (State.input.keys.s)
@@ -840,6 +979,7 @@
           let nextX = State.player.x + State.player.vx * timeScale;
           let nextY = State.player.y + State.player.vy * timeScale;
 
+          // Collisions (Only if structures exist)
           for (let s of State.world.structures) {
             if (Utils.checkRectCollide(nextX, State.player.y, s)) {
               State.player.vx *= -0.5;
@@ -871,7 +1011,7 @@
             if (--State.player.cloakTimer <= 0) State.player.cloaked = false;
           if (State.player.scanActive) State.player.scanTimer--;
 
-          if (timeScale > 0) {
+          if (timeScale > 0 && State.player.combatUnlocked) {
             GameLogic.updateEnemies(timeScale);
             GameLogic.updateProjectiles(timeScale);
           }
@@ -998,10 +1138,10 @@
           State.player.health = 0;
           const overlay = document.getElementById("overlay-screen");
           document.getElementById("overlay-text").innerText =
-            "FATAL ERROR\nSOURCE DECOMPILED";
+            "FATAL ERROR\nSOURCE Code Destroyed";
           document.getElementById("overlay-text").style.color = "#ff3333";
           overlay.style.opacity = 1;
-          setTimeout(GameLogic.init, 3000);
+          setTimeout(() => location.reload(), 3000); // Reloads to retry
         },
       };
 
@@ -1162,7 +1302,10 @@
           let hf = State.player.isDead
             ? 0
             : Math.max(0.1, State.player.health / 100);
-          let r = Config.baseLightRadius * hf;
+
+          // Use imported Light Level
+          let r = Config.baseLightRadius * State.player.lightLevel * hf;
+
           let g = ctx.createRadialGradient(
             cx,
             cy,
@@ -1243,19 +1386,6 @@
         },
         toggleMenu: () => {
           document.getElementById("menu-dropdown").classList.toggle("show");
-        },
-        bootSequence: () => {
-          const overlay = document.getElementById("overlay-screen");
-          overlay.style.opacity = 1;
-          document.getElementById("overlay-text").innerText =
-            "SYSTEM REBOOT...";
-          document.getElementById("overlay-text").style.color = "#00f3ff";
-          setTimeout(() => {
-            overlay.style.opacity = 0;
-            document.getElementById("ui-layer").classList.add("active");
-            TerminalSystem.log("SYSTEM ONLINE");
-            TerminalSystem.init();
-          }, 2000);
         },
       };
 

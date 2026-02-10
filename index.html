@@ -1,436 +1,949 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>0110: CHAPTER 1</title>
     <style>
-        /* --- CORE STYLES --- */
-        :root {
-            --primary: #00f3ff;
-            --secondary: #bd00ff;
-            --terminal: #00ff00;
-            --bg-glass: rgba(0, 10, 5, 0.95);
-            --margin: 30px; 
+      /* --- CORE STYLES --- */
+      :root {
+        --primary: #00f3ff;
+        --secondary: #bd00ff;
+        --terminal: #00ff00;
+        --bg-glass: rgba(0, 10, 5, 0.95);
+        --margin: 30px;
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #000000;
+        font-family: "Courier New", Courier, monospace;
+        color: white;
+        user-select: none;
+      }
+
+      canvas {
+        display: block;
+        cursor: none;
+      }
+      .hud-element {
+        cursor: default;
+      }
+      .clickable {
+        cursor: pointer;
+      }
+
+      /* --- CINEMATICS --- */
+      #cinematic-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: black;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+      }
+
+      .title-text {
+        font-size: 80px;
+        font-weight: bold;
+        letter-spacing: 15px;
+        opacity: 0;
+        transition: opacity 2s;
+        text-shadow: 0 0 30px white;
+        text-align: center;
+      }
+      .subtitle-text {
+        font-size: 24px;
+        letter-spacing: 8px;
+        color: var(--primary);
+        margin-top: 20px;
+        opacity: 0;
+        transition: opacity 2s;
+        text-align: center;
+      }
+      .dev-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 18px;
+        letter-spacing: 4px;
+        color: #888;
+        opacity: 0;
+        transition: opacity 1s;
+      }
+
+      /* GLITCH */
+      #glitch-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          #00f3ff 2px,
+          #00f3ff 4px
+        );
+        opacity: 0;
+        pointer-events: none;
+        mix-blend-mode: overlay;
+        z-index: 10000;
+      }
+      .glitch-active {
+        animation: noise 0.2s infinite;
+        opacity: 0.3 !important;
+      }
+      @keyframes noise {
+        0% {
+          transform: translate(0, 0);
         }
-
-        body {
-            margin: 0; overflow: hidden; background-color: #000000;
-            font-family: 'Courier New', Courier, monospace;
-            color: white; user-select: none;
+        20% {
+          transform: translate(-5px, 5px);
         }
-        
-        canvas { display: block; cursor: none; }
-        .hud-element { cursor: default; }
-        .clickable { cursor: pointer; }
-
-        /* --- CINEMATICS --- */
-        #cinematic-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: black; z-index: 9999; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; pointer-events: none;
+        40% {
+          transform: translate(5px, -5px);
         }
-        
-        .title-text { 
-            font-size: 80px; font-weight: bold; letter-spacing: 15px; 
-            opacity: 0; transition: opacity 2s; text-shadow: 0 0 30px white; text-align: center; 
+        100% {
+          transform: translate(0, 0);
         }
-        .subtitle-text { 
-            font-size: 24px; letter-spacing: 8px; color: var(--primary); 
-            margin-top: 20px; opacity: 0; transition: opacity 2s; text-align: center; 
-        }
-        .dev-text { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 18px; letter-spacing: 4px; color: #888; 
-            opacity: 0; transition: opacity 1s; 
-        }
+      }
 
-        /* GLITCH */
-        #glitch-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: repeating-linear-gradient(0deg, transparent, transparent 2px, #00f3ff 2px, #00f3ff 4px);
-            opacity: 0; pointer-events: none; mix-blend-mode: overlay; z-index: 10000;
-        }
-        .glitch-active { animation: noise 0.2s infinite; opacity: 0.3 !important; }
-        @keyframes noise {
-            0% { transform: translate(0,0) } 20% { transform: translate(-5px,5px) }
-            40% { transform: translate(5px,-5px) } 100% { transform: translate(0,0) }
-        }
+      /* --- UI LAYOUT --- */
+      #ui-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      .locked {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 2s;
+      }
+      .unlocked {
+        opacity: 1;
+        visibility: visible;
+      }
 
-        /* --- UI LAYOUT --- */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .locked { opacity: 0; visibility: hidden; transition: opacity 2s; }
-        .unlocked { opacity: 1; visibility: visible; }
+      #hud-top-left {
+        position: absolute;
+        top: var(--margin);
+        left: var(--margin);
+        width: 350px;
+        pointer-events: auto;
+      }
+      .log-entry {
+        font-size: 13px;
+        margin-bottom: 4px;
+        opacity: 0.8;
+        color: var(--primary);
+        text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+      }
 
-        #hud-top-left { position: absolute; top: var(--margin); left: var(--margin); width: 350px; pointer-events: auto; }
-        .log-entry { font-size: 13px; margin-bottom: 4px; opacity: 0.8; color: var(--primary); text-shadow: 0 0 5px rgba(0, 243, 255, 0.5); }
+      #hud-top-right {
+        position: absolute;
+        top: var(--margin);
+        right: var(--margin);
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+      #menu-icon {
+        font-size: 24px;
+        color: var(--primary);
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        transition: 0.2s;
+        border: 1px solid transparent;
+      }
+      #menu-icon:hover {
+        text-shadow: 0 0 10px var(--primary);
+        border-color: var(--primary);
+      }
+      #menu-dropdown {
+        display: none;
+        margin-top: 10px;
+        background: var(--bg-glass);
+        border: 1px solid var(--primary);
+        min-width: 150px;
+      }
+      #menu-dropdown.show {
+        display: block;
+      }
+      .menu-item {
+        padding: 12px;
+        font-size: 12px;
+        color: #ccc;
+        border-bottom: 1px solid #333;
+        transition: 0.2s;
+      }
+      .menu-item:hover {
+        background: rgba(0, 243, 255, 0.2);
+        color: white;
+      }
 
-        #hud-top-right { position: absolute; top: var(--margin); right: var(--margin); pointer-events: auto; display: flex; flex-direction: column; align-items: flex-end; }
-        #menu-icon { font-size: 24px; color: var(--primary); padding: 10px; background: rgba(0,0,0,0.5); transition: 0.2s; border: 1px solid transparent; }
-        #menu-icon:hover { text-shadow: 0 0 10px var(--primary); border-color: var(--primary); }
-        #menu-dropdown { display: none; margin-top: 10px; background: var(--bg-glass); border: 1px solid var(--primary); min-width: 150px; }
-        #menu-dropdown.show { display: block; }
-        .menu-item { padding: 12px; font-size: 12px; color: #ccc; border-bottom: 1px solid #333; transition: 0.2s; }
-        .menu-item:hover { background: rgba(0, 243, 255, 0.2); color: white; }
+      #hud-bottom-left {
+        position: absolute;
+        bottom: var(--margin);
+        left: var(--margin);
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        pointer-events: auto;
+      }
+      #data-bank {
+        font-size: 14px;
+        color: var(--primary);
+        font-weight: bold;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 5px 10px;
+        border-left: 3px solid var(--primary);
+      }
+      #minimap-container {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        border: 2px solid #333;
+        background: #000;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+      }
+      #minimap-canvas {
+        width: 100%;
+        height: 100%;
+        opacity: 0.8;
+      }
 
-        #hud-bottom-left { position: absolute; bottom: var(--margin); left: var(--margin); display: flex; flex-direction: column; gap: 5px; pointer-events: auto; }
-        #data-bank { font-size: 14px; color: var(--primary); font-weight: bold; background: rgba(0,0,0,0.5); padding: 5px 10px; border-left: 3px solid var(--primary); }
-        #minimap-container { width: 140px; height: 140px; border-radius: 50%; border: 2px solid #333; background: #000; overflow: hidden; position: relative; box-shadow: 0 0 15px rgba(0,0,0,0.8); }
-        #minimap-canvas { width: 100%; height: 100%; opacity: 0.8; }
+      #hud-bottom-center {
+        position: absolute;
+        bottom: var(--margin);
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 500px;
+        pointer-events: auto;
+      }
+      .stats-row {
+        display: flex;
+        gap: 15px;
+        width: 100%;
+        margin-bottom: 12px;
+      }
+      .bar-wrapper {
+        flex: 1;
+      }
+      .bar-container {
+        height: 6px;
+        background: #111;
+        border: 1px solid #444;
+      }
+      #bar-health {
+        background: #888;
+        height: 100%;
+        width: 100%;
+      }
+      #bar-light {
+        background: #ccc;
+        height: 100%;
+        width: 100%;
+        box-shadow: 0 0 5px #ccc;
+      }
+      .bar-label {
+        font-size: 10px;
+        margin-bottom: 4px;
+        display: block;
+        color: #aaa;
+      }
+      #hotbar {
+        display: flex;
+        gap: 5px;
+        width: 100%;
+      }
+      .slot {
+        flex: 1;
+        height: 45px;
+        background: rgba(20, 20, 20, 0.6);
+        border: 1px solid #444;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #555;
+        font-size: 12px;
+      }
 
-        #hud-bottom-center { position: absolute; bottom: var(--margin); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; width: 500px; pointer-events: auto; }
-        .stats-row { display: flex; gap: 15px; width: 100%; margin-bottom: 12px; }
-        .bar-wrapper { flex: 1; }
-        .bar-container { height: 6px; background: #111; border: 1px solid #444; }
-        #bar-health { background: #888; height: 100%; width: 100%; }
-        #bar-light { background: #ccc; height: 100%; width: 100%; box-shadow: 0 0 5px #ccc; }
-        .bar-label { font-size: 10px; margin-bottom: 4px; display: block; color: #aaa; }
-        #hotbar { display: flex; gap: 5px; width: 100%; }
-        .slot { flex: 1; height: 45px; background: rgba(20, 20, 20, 0.6); border: 1px solid #444; display: flex; justify-content: center; align-items: center; color: #555; font-size: 12px; }
+      #hud-bottom-right {
+        position: absolute;
+        bottom: var(--margin);
+        right: var(--margin);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        pointer-events: auto;
+      }
+      #tablet-icon {
+        width: 50px;
+        height: 60px;
+        background: var(--bg-glass);
+        border: 1px solid var(--primary);
+        border-radius: 4px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        color: var(--primary);
+        font-size: 20px;
+        z-index: 20;
+      }
+      #terminal-wrapper {
+        position: absolute;
+        bottom: 75px;
+        right: 0;
+        width: 450px;
+        height: 0;
+        background: var(--bg-glass);
+        border: 1px solid #444;
+        overflow: hidden;
+        transition: height 0.5s;
+        border-radius: 4px 4px 0 0;
+        display: flex;
+        flex-direction: column;
+      }
+      #terminal-wrapper.open {
+        height: 500px;
+        border-color: var(--terminal);
+        box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+      }
+      .term-header {
+        background: #051a05;
+        padding: 10px;
+        font-size: 12px;
+        color: #4f4;
+        text-align: center;
+        border-bottom: 1px solid #141;
+      }
+      #term-output {
+        flex-grow: 1;
+        padding: 20px;
+        font-family: "Consolas", monospace;
+        font-size: 14px;
+        color: var(--terminal);
+        line-height: 1.6;
+        overflow-y: scroll;
+        scrollbar-width: none;
+      }
+      #term-output::-webkit-scrollbar {
+        display: none;
+      }
+      #term-input-line {
+        display: flex;
+        padding: 15px;
+        background: #000;
+        border-top: 1px solid #141;
+      }
+      #term-input {
+        background: transparent;
+        border: none;
+        color: var(--terminal);
+        font-family: "Consolas", monospace;
+        font-size: 14px;
+        flex-grow: 1;
+        outline: none;
+      }
 
-        #hud-bottom-right { position: absolute; bottom: var(--margin); right: var(--margin); display: flex; flex-direction: column; align-items: flex-end; pointer-events: auto; }
-        #tablet-icon { width: 50px; height: 60px; background: var(--bg-glass); border: 1px solid var(--primary); border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer; color: var(--primary); font-size: 20px; z-index: 20; }
-        #terminal-wrapper { position: absolute; bottom: 75px; right: 0; width: 450px; height: 0; background: var(--bg-glass); border: 1px solid #444; overflow: hidden; transition: height 0.5s; border-radius: 4px 4px 0 0; display: flex; flex-direction: column; }
-        #terminal-wrapper.open { height: 500px; border-color: var(--terminal); box-shadow: 0 0 20px rgba(0, 255, 0, 0.2); }
-        .term-header { background: #051a05; padding: 10px; font-size: 12px; color: #4f4; text-align: center; border-bottom: 1px solid #141; }
-        #term-output { flex-grow: 1; padding: 20px; font-family: 'Consolas', monospace; font-size: 14px; color: var(--terminal); line-height: 1.6; overflow-y: scroll; scrollbar-width: none; }
-        #term-output::-webkit-scrollbar { display: none; }
-        #term-input-line { display: flex; padding: 15px; background: #000; border-top: 1px solid #141; }
-        #term-input { background: transparent; border: none; color: var(--terminal); font-family: 'Consolas', monospace; font-size: 14px; flex-grow: 1; outline: none; }
-
-        #fade-layer { position: absolute; top:0; left:0; width:100%; height:100%; background: white; pointer-events: none; z-index: 20000; opacity: 0; transition: opacity 3s; }
+      #fade-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: white;
+        pointer-events: none;
+        z-index: 20000;
+        opacity: 0;
+        transition: opacity 3s;
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <div id="fade-layer"></div>
     <div id="glitch-layer"></div>
     <div id="cinematic-overlay">
-        <div id="intro-title" class="title-text">0110</div>
-        <div id="intro-sub" class="subtitle-text">THE INSTITUTE</div>
-        <div id="intro-dev" class="dev-text">A Samir C Production</div>
+      <div id="intro-title" class="title-text">0110</div>
+      <div id="intro-sub" class="subtitle-text">THE INSTITUTE</div>
+      <div id="intro-dev" class="dev-text">A Samir C Production</div>
     </div>
 
     <div id="ui-layer">
-        <div id="hud-top-left" class="hud-element locked">
-            <div id="system-log"><div class="log-entry">> PROTOCOL INITIATED</div></div>
-            <div id="coords-display">LOC: [0, 0]</div>
+      <div id="hud-top-left" class="hud-element locked">
+        <div id="system-log">
+          <div class="log-entry">> PROTOCOL INITIATED</div>
         </div>
-        <div id="hud-top-right" class="hud-element locked">
-            <div id="menu-icon" class="clickable" onclick="UI.toggleMenu()">☰</div>
-            <div id="menu-dropdown">
-                <div class="menu-item clickable" onclick="UI.log('SAVING DISABLED (TUTORIAL)')">SAVE</div>
-                <div class="menu-item clickable" onclick="UI.log('SETTINGS')">SETTINGS</div>
-                <div class="menu-item clickable" onclick="location.reload()">REBOOT</div>
-            </div>
+        <div id="coords-display">LOC: [0, 0]</div>
+      </div>
+      <div id="hud-top-right" class="hud-element locked">
+        <div id="menu-icon" class="clickable" onclick="UI.toggleMenu()">☰</div>
+        <div id="menu-dropdown">
+          <div
+            class="menu-item clickable"
+            onclick="UI.log('SAVING DISABLED (TUTORIAL)')"
+          >
+            SAVE
+          </div>
+          <div class="menu-item clickable" onclick="UI.log('SETTINGS')">
+            SETTINGS
+          </div>
+          <div class="menu-item clickable" onclick="location.reload()">
+            REBOOT
+          </div>
         </div>
-        <div id="hud-bottom-left" class="hud-element locked">
-            <div id="data-bank">DATA: 0 MB</div>
-            <div id="minimap-container"><canvas id="minimap-canvas" width="140" height="140"></canvas><div id="minimap-border"></div></div>
+      </div>
+      <div id="hud-bottom-left" class="hud-element locked">
+        <div id="data-bank">DATA: 0 MB</div>
+        <div id="minimap-container">
+          <canvas id="minimap-canvas" width="140" height="140"></canvas>
+          <div id="minimap-border"></div>
         </div>
-        <div id="hud-bottom-center" class="hud-element locked">
-            <div class="stats-row">
-                <div class="bar-wrapper"><span class="bar-label">INTEGRITY</span><div class="bar-container"><div id="bar-health"></div></div></div>
-                <div class="bar-wrapper"><span class="bar-label">LIGHT</span><div class="bar-container"><div id="bar-light"></div></div></div>
-            </div>
-            <div id="hotbar">
-                <div class="slot" id="slot-1">1</div><div class="slot" id="slot-2">2</div><div class="slot" id="slot-3">3</div><div class="slot" id="slot-4">4</div><div class="slot" id="slot-5">5</div>
-            </div>
+      </div>
+      <div id="hud-bottom-center" class="hud-element locked">
+        <div class="stats-row">
+          <div class="bar-wrapper">
+            <span class="bar-label">INTEGRITY</span>
+            <div class="bar-container"><div id="bar-health"></div></div>
+          </div>
+          <div class="bar-wrapper">
+            <span class="bar-label">LIGHT</span>
+            <div class="bar-container"><div id="bar-light"></div></div>
+          </div>
         </div>
-        <div id="hud-bottom-right" class="hud-element locked"> 
-            <div id="terminal-wrapper">
-                <div class="term-header">CONNECTION: SECURE // USER: WilliamHayes</div>
-                <div id="term-output"></div>
-                <div id="term-input-line"><span style="color:#0f0; margin-right:10px;">></span><input type="text" id="term-input" autocomplete="off"></div>
-            </div>
-            <div id="tablet-icon" class="clickable" onclick="Terminal.toggle()">&lt;/&gt;</div>
+        <div id="hotbar">
+          <div class="slot" id="slot-1">1</div>
+          <div class="slot" id="slot-2">2</div>
+          <div class="slot" id="slot-3">3</div>
+          <div class="slot" id="slot-4">4</div>
+          <div class="slot" id="slot-5">5</div>
         </div>
+      </div>
+      <div id="hud-bottom-right" class="hud-element locked">
+        <div id="terminal-wrapper">
+          <div class="term-header">
+            CONNECTION: SECURE // USER: WilliamHayes
+          </div>
+          <div id="term-output"></div>
+          <div id="term-input-line">
+            <span style="color: #0f0; margin-right: 10px">></span
+            ><input type="text" id="term-input" autocomplete="off" />
+          </div>
+        </div>
+        <div id="tablet-icon" class="clickable" onclick="Terminal.toggle()">
+          &lt;/&gt;
+        </div>
+      </div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
     <script>
-        const Config = {
-            gridSize: 60, baseLightRadius: 300,
-            colors: { grid: '#151515', fragment: '#00f3ff', beacon: '#ffffff', portal: '#bd00ff' },
-            player: { accel: 0.15, friction: 0.96 }
-        };
+      const Config = {
+        gridSize: 60,
+        baseLightRadius: 300,
+        colors: {
+          grid: "#151515",
+          fragment: "#00f3ff",
+          beacon: "#ffffff",
+          portal: "#bd00ff",
+        },
+        player: { accel: 0.15, friction: 0.96 },
+      };
 
-        const State = {
-            phase: 'intro',
-            player: { x: 0, y: 0, vx: 0, vy: 0, size: 10, data: 0, lightLevel: 1.0, isTerminalOpen: false, scanActive: false, scanTimer: 0 },
-            world: { fragments: [], beacon: { x: 0, y: 0, active: false, pulse: 0 }, portal: { x:0, y:0, active: false, pulse: 0 } },
-            input: { keys: { w:false, a:false, s:false, d:false } },
-            hotbar: { 1: null, 2: null, 3: null, 4: null, 5: null }
-        };
+      const State = {
+        phase: "intro",
+        player: {
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          size: 10,
+          data: 0,
+          lightLevel: 1.0,
+          isTerminalOpen: false,
+          scanActive: false,
+          scanTimer: 0,
+        },
+        world: {
+          fragments: [],
+          beacon: { x: 0, y: 0, active: false, pulse: 0 },
+          portal: { x: 0, y: 0, active: false, pulse: 0 },
+        },
+        input: { keys: { w: false, a: false, s: false, d: false } },
+        hotbar: { 1: null, 2: null, 3: null, 4: null, 5: null },
+      };
 
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const miniCanvas = document.getElementById('minimap-canvas');
-        const miniCtx = miniCanvas.getContext('2d');
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const miniCanvas = document.getElementById("minimap-canvas");
+      const miniCtx = miniCanvas.getContext("2d");
 
-        const Utils = {
-            wait: (ms) => new Promise(r => setTimeout(r, ms)),
-            unlock: (id) => document.getElementById(id).classList.add('unlocked')
-        };
+      const Utils = {
+        wait: (ms) => new Promise((r) => setTimeout(r, ms)),
+        unlock: (id) => document.getElementById(id).classList.add("unlocked"),
+      };
 
-        const Intro = {
-            play: async () => {
-                const title = document.getElementById('intro-title');
-                const sub = document.getElementById('intro-sub');
-                const dev = document.getElementById('intro-dev');
-                const glitch = document.getElementById('glitch-layer');
-                const overlay = document.getElementById('cinematic-overlay');
+      const Intro = {
+        play: async () => {
+          const title = document.getElementById("intro-title");
+          const sub = document.getElementById("intro-sub");
+          const dev = document.getElementById("intro-dev");
+          const glitch = document.getElementById("glitch-layer");
+          const overlay = document.getElementById("cinematic-overlay");
 
-                await Utils.wait(500); title.style.opacity = 1; sub.style.opacity = 1;
-                await Utils.wait(3000); title.style.opacity = 0; sub.style.opacity = 0;
-                await Utils.wait(1000); dev.style.opacity = 1;
-                await Utils.wait(2500); dev.style.opacity = 0;
-                await Utils.wait(500); glitch.classList.add('glitch-active');
-                await Utils.wait(500); glitch.classList.remove('glitch-active'); overlay.style.opacity = 0;
-                
-                State.phase = 'void';
-                Game.spawnBeacon();
+          await Utils.wait(500);
+          title.style.opacity = 1;
+          sub.style.opacity = 1;
+          await Utils.wait(3000);
+          title.style.opacity = 0;
+          sub.style.opacity = 0;
+          await Utils.wait(1000);
+          dev.style.opacity = 1;
+          await Utils.wait(2500);
+          dev.style.opacity = 0;
+          await Utils.wait(500);
+          glitch.classList.add("glitch-active");
+          await Utils.wait(500);
+          glitch.classList.remove("glitch-active");
+          overlay.style.opacity = 0;
+
+          State.phase = "void";
+          Game.spawnBeacon();
+        },
+      };
+
+      const UI = {
+        update: () => {
+          document.getElementById(
+            "coords-display"
+          ).innerText = `LOC: [${Math.floor(State.player.x)}, ${Math.floor(
+            State.player.y
+          )}]`;
+          document.getElementById(
+            "data-bank"
+          ).innerText = `DATA: ${State.player.data} MB`;
+        },
+        log: (msg) => {
+          const l = document.getElementById("system-log");
+          const d = document.createElement("div");
+          d.className = "log-entry";
+          d.innerText = "> " + msg;
+          l.appendChild(d);
+          if (l.children.length > 5) l.removeChild(l.firstChild);
+        },
+        toggleMenu: () =>
+          document.getElementById("menu-dropdown").classList.toggle("show"),
+      };
+
+      const Terminal = {
+        print: (text, color = "#0f0") => {
+          const out = document.getElementById("term-output");
+          const line = document.createElement("div");
+          line.style.color = color;
+          line.style.marginBottom = "8px";
+          line.innerText = text;
+          out.appendChild(line);
+          out.scrollTop = out.scrollHeight;
+        },
+        toggle: () => {
+          if (State.phase === "intro" || State.phase === "void") return;
+          State.player.isTerminalOpen = !State.player.isTerminalOpen;
+          const wrap = document.getElementById("terminal-wrapper");
+          if (State.player.isTerminalOpen) {
+            wrap.classList.add("open");
+            setTimeout(() => document.getElementById("term-input").focus(), 50);
+          } else {
+            wrap.classList.remove("open");
+            document.getElementById("term-input").blur();
+          }
+        },
+        runSequence: async () => {
+          State.phase = "tutorial";
+          Utils.unlock("hud-bottom-right");
+          await Utils.wait(500);
+          Terminal.toggle();
+          await Utils.wait(1000);
+          Terminal.print("SOURCE CODE IDENTIFIED...", "#fff");
+          await Utils.wait(1500);
+          Terminal.print("#WilliamHayes CONNECTED.", "#00f3ff");
+          await Utils.wait(1500);
+          Terminal.print("ALERT: MEMORY BANKS OFFLINE.", "#ff3333");
+          await Utils.wait(2000);
+          Terminal.print("RESTORING NAVIGATION...", "#ccc");
+          await Utils.wait(1000);
+          Utils.unlock("hud-top-left");
+          Utils.unlock("hud-bottom-left");
+          Terminal.print(">> MAP & LOGS: UNLOCKED", "#0f0");
+          await Utils.wait(2000);
+          Terminal.print("SCANNING FOR DATA FRAGMENTS...", "#ccc");
+          Game.spawnLoot();
+          await Utils.wait(2000);
+          Utils.unlock("hud-bottom-center");
+          Utils.unlock("hud-top-right");
+          Terminal.print(">> CORE STATS: UNLOCKED", "#0f0");
+          await Utils.wait(1000);
+          Terminal.print("TUTORIAL COMPLETE. SYSTEM READY.", "#fff");
+          Terminal.print("Press 'Tab' to open/close Terminal.", "#fff");
+          Terminal.print("COMMANDS AVAILABLE:", "#00f3ff");
+          Terminal.print("  sys.lumos  - Enhance Light (50 MB)", "#ccc");
+          Terminal.print("  sys.scan   - Highlight Loot (50 MB)", "#ccc");
+          Terminal.print("  /bind [k] [cmd] - Assign Keys", "#ccc");
+          Terminal.print(
+            "n: TRY ABOVE COMMANDS BEFORE ENTERING THE RIFT.",
+            "#ccc"
+          );
+          Terminal.print("OBJECTIVE: ENTER THE RIFT TO ESCAPE.", "#bd00ff");
+          State.phase = "active";
+          Game.spawnPortal();
+        },
+        execute: (val) => {
+          const parts = val.split(" ");
+          const cmd = parts[0];
+          const args = parts.slice(1);
+          if (cmd === "/help")
+            Terminal.print("COMMANDS: sys.lumos, sys.scan, /bind", "#fff");
+          else if (cmd === "sys.lumos") {
+            if (State.player.data >= 50) {
+              State.player.data -= 50;
+              State.player.lightLevel += 0.3;
+              Terminal.print("LIGHT RADIUS INCREASED.", "#0f0");
+            } else Terminal.print("ERR: 50 DATA REQUIRED", "#f33");
+          } else if (cmd === "sys.scan") {
+            if (State.player.data >= 50) {
+              State.player.data -= 50;
+              State.player.scanActive = true;
+              State.player.scanTimer = 600;
+              Terminal.print("AREA SCANNED.", "#0f0");
+            } else Terminal.print("ERR: 50 DATA REQUIRED", "#f33");
+          } else if (cmd === "/bind") {
+            const k = args[0];
+            const c = args[1];
+            if (["1", "2", "3", "4", "5"].includes(k)) {
+              State.hotbar[k] = c;
+              document.getElementById(`slot-${k}`).innerText = c;
+              Terminal.print(`BOUND ${c} TO [${k}]`, "#0ff");
+            } else Terminal.print("ERR: INVALID KEY", "#f33");
+          } else Terminal.print("UNKNOWN COMMAND", "#f33");
+          UI.update();
+        },
+      };
+
+      const Game = {
+        init: () => {
+          State.player.x = 0;
+          State.player.y = 0;
+          State.world = {
+            fragments: [],
+            beacon: { active: false },
+            portal: { active: false },
+          };
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+          window.addEventListener("resize", () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+          });
+          Intro.play();
+        },
+        spawnBeacon: () => {
+          const angle = Math.random() * Math.PI * 2;
+          State.world.beacon = {
+            x: Math.cos(angle) * 600,
+            y: Math.sin(angle) * 600,
+            active: true,
+            pulse: 0,
+          };
+        },
+        spawnLoot: () => {
+          for (let i = 0; i < 40; i++) {
+            let x = Math.random() * 2000 - 1000;
+            let y = Math.random() * 2000 - 1000;
+            if (Math.sqrt(x * x + y * y) > 200)
+              State.world.fragments.push({ x, y, size: 8, active: true });
+          }
+        },
+        spawnPortal: () => {
+          State.world.portal = {
+            x: -State.player.x + 200,
+            y: -State.player.y + 200,
+            active: true,
+            pulse: 0,
+          };
+          UI.log("ANOMALY DETECTED: PORTAL OPENED");
+        },
+        update: () => {
+          if (State.phase === "intro" || State.phase === "end") return;
+          const timeScale = State.player.isTerminalOpen ? 0.1 : 1.0;
+
+          if (State.input.keys.w)
+            State.player.vy -= Config.player.accel * timeScale;
+          if (State.input.keys.s)
+            State.player.vy += Config.player.accel * timeScale;
+          if (State.input.keys.a)
+            State.player.vx -= Config.player.accel * timeScale;
+          if (State.input.keys.d)
+            State.player.vx += Config.player.accel * timeScale;
+          State.player.vx *= Config.player.friction;
+          State.player.vy *= Config.player.friction;
+          State.player.x += State.player.vx * timeScale;
+          State.player.y += State.player.vy * timeScale;
+
+          if (State.phase === "void" && State.world.beacon.active) {
+            const dx = State.player.x - State.world.beacon.x;
+            const dy = State.player.y - State.world.beacon.y;
+            if (Math.sqrt(dx * dx + dy * dy) < 50) {
+              State.world.beacon.active = false;
+              Terminal.runSequence();
             }
-        };
+          }
 
-        const UI = {
-            update: () => {
-                document.getElementById('coords-display').innerText = `LOC: [${Math.floor(State.player.x)}, ${Math.floor(State.player.y)}]`;
-                document.getElementById('data-bank').innerText = `DATA: ${State.player.data} MB`;
-            },
-            log: (msg) => {
-                const l = document.getElementById('system-log');
-                const d = document.createElement('div'); d.className = "log-entry"; d.innerText = "> " + msg;
-                l.appendChild(d); if(l.children.length > 5) l.removeChild(l.firstChild);
-            },
-            toggleMenu: () => document.getElementById('menu-dropdown').classList.toggle('show')
-        };
+          if (State.phase === "active" && State.world.portal.active) {
+            const dx = State.player.x - State.world.portal.x;
+            const dy = State.player.y - State.world.portal.y;
+            if (Math.sqrt(dx * dx + dy * dy) < 60) {
+              State.phase = "end";
 
-        const Terminal = {
-            print: (text, color="#0f0") => {
-                const out = document.getElementById('term-output');
-                const line = document.createElement('div');
-                line.style.color = color; line.style.marginBottom = "8px"; line.innerText = text;
-                out.appendChild(line); out.scrollTop = out.scrollHeight;
-            },
-            toggle: () => {
-                if (State.phase === 'intro' || State.phase === 'void') return;
-                State.player.isTerminalOpen = !State.player.isTerminalOpen;
-                const wrap = document.getElementById('terminal-wrapper');
-                if(State.player.isTerminalOpen) {
-                    wrap.classList.add('open'); setTimeout(() => document.getElementById('term-input').focus(), 50);
-                } else {
-                    wrap.classList.remove('open'); document.getElementById('term-input').blur();
-                }
-            },
-            runSequence: async () => {
-                State.phase = 'tutorial';
-                Utils.unlock('hud-bottom-right'); 
-                await Utils.wait(500); Terminal.toggle();
-                await Utils.wait(1000); Terminal.print("SOURCE CODE IDENTIFIED...", "#fff");
-                await Utils.wait(1500); Terminal.print("#WilliamHayes CONNECTED.", "#00f3ff");
-                await Utils.wait(1500); Terminal.print("ALERT: MEMORY BANKS OFFLINE.", "#ff3333");
-                await Utils.wait(2000); 
-                Terminal.print("RESTORING NAVIGATION...", "#ccc");
-                await Utils.wait(1000); Utils.unlock('hud-top-left'); Utils.unlock('hud-bottom-left');
-                Terminal.print(">> MAP & LOGS: UNLOCKED", "#0f0");
-                await Utils.wait(2000); Terminal.print("SCANNING FOR DATA FRAGMENTS...", "#ccc"); Game.spawnLoot();
-                await Utils.wait(2000); Utils.unlock('hud-bottom-center'); Utils.unlock('hud-top-right');
-                Terminal.print(">> CORE STATS: UNLOCKED", "#0f0");
-                await Utils.wait(1000);
-                Terminal.print("TUTORIAL COMPLETE. SYSTEM READY.", "#fff");
-                Terminal.print("COMMANDS AVAILABLE:", "#00f3ff");
-                Terminal.print("  sys.lumos  - Enhance Light (50 MB)", "#ccc");
-                Terminal.print("  sys.scan   - Highlight Loot (50 MB)", "#ccc");
-                Terminal.print("  /bind [k] [cmd] - Assign Keys", "#ccc");
-                Terminal.print("OBJECTIVE: ENTER THE RIFT TO ESCAPE.", "#bd00ff");
-                State.phase = 'active';
-                Game.spawnPortal();
-            },
-            execute: (val) => {
-                const parts = val.split(" "); const cmd = parts[0]; const args = parts.slice(1);
-                if (cmd === "/help") Terminal.print("COMMANDS: sys.lumos, sys.scan, /bind", "#fff");
-                else if (cmd === "sys.lumos") {
-                    if(State.player.data >= 50) {
-                        State.player.data -= 50; State.player.lightLevel += 0.3;
-                        Terminal.print("LIGHT RADIUS INCREASED.", "#0f0");
-                    } else Terminal.print("ERR: 50 DATA REQUIRED", "#f33");
-                }
-                else if (cmd === "sys.scan") {
-                    if(State.player.data >= 50) {
-                        State.player.data -= 50; State.player.scanActive = true; State.player.scanTimer = 600;
-                        Terminal.print("AREA SCANNED.", "#0f0");
-                    } else Terminal.print("ERR: 50 DATA REQUIRED", "#f33");
-                }
-                else if (cmd === "/bind") {
-                    const k = args[0]; const c = args[1];
-                    if(["1","2","3","4","5"].includes(k)) {
-                        State.hotbar[k] = c; document.getElementById(`slot-${k}`).innerText = c;
-                        Terminal.print(`BOUND ${c} TO [${k}]`, "#0ff");
-                    } else Terminal.print("ERR: INVALID KEY", "#f33");
-                }
-                else Terminal.print("UNKNOWN COMMAND", "#f33");
-                UI.update();
+              // --- SAVE DATA BEFORE TRANSITION ---
+              Terminal.print(">> UPLOADING CONSCIOUSNESS...", "#bd00ff");
+              const saveData = {
+                data: State.player.data,
+                lightLevel: State.player.lightLevel,
+              };
+              localStorage.setItem("0110_save", JSON.stringify(saveData));
+
+              document.getElementById("fade-layer").style.opacity = 1;
+              setTimeout(() => {
+                window.location.href = "game.html";
+              }, 3000);
             }
-        };
+          }
 
-        const Game = {
-            init: () => {
-                State.player.x = 0; State.player.y = 0;
-                State.world = { fragments: [], beacon: {active:false}, portal: {active:false} };
-                canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-                window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-                Intro.play();
-            },
-            spawnBeacon: () => {
-                const angle = Math.random() * Math.PI * 2;
-                State.world.beacon = { x: Math.cos(angle)*600, y: Math.sin(angle)*600, active: true, pulse: 0 };
-            },
-            spawnLoot: () => {
-                for(let i=0; i<40; i++) {
-                    let x = Math.random()*2000-1000; let y = Math.random()*2000-1000;
-                    if(Math.sqrt(x*x + y*y) > 200) State.world.fragments.push({ x, y, size: 8, active: true });
-                }
-            },
-            spawnPortal: () => {
-                State.world.portal = { x: -State.player.x + 200, y: -State.player.y + 200, active: true, pulse: 0 };
-                UI.log("ANOMALY DETECTED: PORTAL OPENED");
-            },
-            update: () => {
-                if (State.phase === 'intro' || State.phase === 'end') return;
-                const timeScale = State.player.isTerminalOpen ? 0.1 : 1.0;
-
-                if(State.input.keys.w) State.player.vy -= Config.player.accel * timeScale;
-                if(State.input.keys.s) State.player.vy += Config.player.accel * timeScale;
-                if(State.input.keys.a) State.player.vx -= Config.player.accel * timeScale;
-                if(State.input.keys.d) State.player.vx += Config.player.accel * timeScale;
-                State.player.vx *= Config.player.friction; State.player.vy *= Config.player.friction;
-                State.player.x += State.player.vx * timeScale; State.player.y += State.player.vy * timeScale;
-
-                if (State.phase === 'void' && State.world.beacon.active) {
-                    const dx = State.player.x - State.world.beacon.x; const dy = State.player.y - State.world.beacon.y;
-                    if (Math.sqrt(dx*dx + dy*dy) < 50) { State.world.beacon.active = false; Terminal.runSequence(); }
-                }
-
-                if (State.phase === 'active' && State.world.portal.active) {
-                    const dx = State.player.x - State.world.portal.x; const dy = State.player.y - State.world.portal.y;
-                    if (Math.sqrt(dx*dx + dy*dy) < 60) {
-                        State.phase = 'end';
-                        document.getElementById('fade-layer').style.opacity = 1;
-                        setTimeout(() => {
-                            // REDIRECT TO NEXT PAGE (sector2.html)
-                            window.location.href = "game.html"; 
-                        }, 3000);
-                    }
-                }
-
-                State.world.fragments.forEach(f => {
-                    if(f.active && Math.sqrt((State.player.x-f.x)**2 + (State.player.y-f.y)**2) < 20) {
-                        f.active = false; State.player.data += 10; UI.log("DATA MINED: +10 MB"); UI.update();
-                    }
-                });
-                
-                if(State.player.scanActive) State.player.scanTimer--;
+          State.world.fragments.forEach((f) => {
+            if (
+              f.active &&
+              Math.sqrt(
+                (State.player.x - f.x) ** 2 + (State.player.y - f.y) ** 2
+              ) < 20
+            ) {
+              f.active = false;
+              State.player.data += 10;
+              UI.log("DATA MINED: +10 MB");
+              UI.update();
             }
-        };
+          });
 
-        const Render = {
-            loop: () => {
-                ctx.fillStyle = '#050505'; ctx.fillRect(0,0, canvas.width, canvas.height);
-                const cx = canvas.width / 2, cy = canvas.height / 2;
-                ctx.save(); ctx.translate(cx - State.player.x, cy - State.player.y);
+          if (State.player.scanActive) State.player.scanTimer--;
+        },
+      };
 
-                const sc = Math.floor((State.player.x-cx)/Config.gridSize), ec = Math.floor((State.player.x+cx)/Config.gridSize)+1;
-                const sr = Math.floor((State.player.y-cy)/Config.gridSize), er = Math.floor((State.player.y+cy)/Config.gridSize)+1;
-                ctx.strokeStyle = Config.colors.grid; ctx.lineWidth = 1; ctx.beginPath();
-                for (let x=sc*Config.gridSize; x<=ec*Config.gridSize; x+=Config.gridSize) { ctx.moveTo(x, State.player.y-cy); ctx.lineTo(x, State.player.y+cy); }
-                for (let y=sr*Config.gridSize; y<=er*Config.gridSize; y+=Config.gridSize) { ctx.moveTo(State.player.x-cx, y); ctx.lineTo(State.player.x+cx, y); }
-                ctx.stroke();
+      const Render = {
+        loop: () => {
+          ctx.fillStyle = "#050505";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const cx = canvas.width / 2,
+            cy = canvas.height / 2;
+          ctx.save();
+          ctx.translate(cx - State.player.x, cy - State.player.y);
 
-                State.world.fragments.forEach(f => {
-                    if(f.active && f.x > State.player.x-cx && f.x < State.player.x+cx) {
-                        ctx.fillStyle = Config.colors.fragment; ctx.shadowBlur = 10; ctx.shadowColor = Config.colors.fragment;
-                        ctx.fillRect(f.x-4, f.y-4, 8, 8);
-                    }
-                });
-                ctx.shadowBlur = 0;
+          const sc = Math.floor((State.player.x - cx) / Config.gridSize),
+            ec = Math.floor((State.player.x + cx) / Config.gridSize) + 1;
+          const sr = Math.floor((State.player.y - cy) / Config.gridSize),
+            er = Math.floor((State.player.y + cy) / Config.gridSize) + 1;
+          ctx.strokeStyle = Config.colors.grid;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (
+            let x = sc * Config.gridSize;
+            x <= ec * Config.gridSize;
+            x += Config.gridSize
+          ) {
+            ctx.moveTo(x, State.player.y - cy);
+            ctx.lineTo(x, State.player.y + cy);
+          }
+          for (
+            let y = sr * Config.gridSize;
+            y <= er * Config.gridSize;
+            y += Config.gridSize
+          ) {
+            ctx.moveTo(State.player.x - cx, y);
+            ctx.lineTo(State.player.x + cx, y);
+          }
+          ctx.stroke();
 
-                ctx.fillStyle = '#fff'; ctx.shadowBlur = 15; ctx.shadowColor = '#fff';
-                ctx.beginPath(); ctx.arc(State.player.x, State.player.y, State.player.size, 0, Math.PI*2); ctx.fill();
-                ctx.shadowBlur = 0;
-
-                ctx.restore();
-
-                let r = Config.baseLightRadius * State.player.lightLevel;
-                let g = ctx.createRadialGradient(cx, cy, 10, cx, cy, r);
-                g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,1)');
-                ctx.fillStyle = g; ctx.fillRect(0,0, canvas.width, canvas.height);
-
-                ctx.save(); ctx.translate(cx - State.player.x, cy - State.player.y);
-                if(State.world.beacon.active) {
-                    let b = State.world.beacon; b.pulse += 0.05;
-                    let sz = 20 + Math.sin(b.pulse)*5;
-                    ctx.fillStyle = Config.colors.beacon; ctx.shadowBlur = 40; ctx.shadowColor = '#00f3ff';
-                    ctx.fillRect(b.x - sz/2, b.y - sz/2, sz, sz);
-                }
-                if(State.world.portal.active) {
-                    let p = State.world.portal; p.pulse += 0.1;
-                    let sz = 40 + Math.sin(p.pulse)*5;
-                    ctx.fillStyle = '#000'; ctx.strokeStyle = Config.colors.portal; ctx.lineWidth = 3;
-                    ctx.shadowBlur = 30; ctx.shadowColor = Config.colors.portal;
-                    ctx.beginPath(); ctx.arc(p.x, p.y, sz, 0, Math.PI*2); ctx.fill(); ctx.stroke();
-                }
-                ctx.restore();
-
-                Render.miniMap();
-            },
-            miniMap: () => {
-                miniCtx.fillStyle = '#000'; miniCtx.fillRect(0,0,140,140);
-                const s = 0.05, cx = 70, cy = 70;
-                
-                if(State.world.beacon.active) {
-                    let rx = (State.world.beacon.x-State.player.x)*s, ry = (State.world.beacon.y-State.player.y)*s;
-                    if(Math.abs(rx)<70 && Math.abs(ry)<70) { miniCtx.fillStyle='#fff'; miniCtx.fillRect(cx+rx-3, cy+ry-3, 6, 6); }
-                }
-                if(State.world.portal.active) {
-                    let rx = (State.world.portal.x-State.player.x)*s, ry = (State.world.portal.y-State.player.y)*s;
-                    if(Math.abs(rx)<70 && Math.abs(ry)<70) { miniCtx.fillStyle='#bd00ff'; miniCtx.beginPath(); miniCtx.arc(cx+rx, cy+ry, 4, 0, Math.PI*2); miniCtx.fill(); }
-                }
-                if(State.phase === 'active' || State.phase === 'tutorial') {
-                    miniCtx.fillStyle = Config.colors.fragment;
-                    State.world.fragments.forEach(f => {
-                       if(f.active) {
-                           let rx = (f.x-State.player.x)*s, ry = (f.y-State.player.y)*s;
-                           if(Math.abs(rx)<70 && Math.abs(ry)<70) {
-                               if(State.player.scanActive) miniCtx.fillRect(cx+rx, cy+ry, 2, 2);
-                           }
-                       } 
-                    });
-                }
-                miniCtx.fillStyle = '#fff'; miniCtx.beginPath(); miniCtx.arc(cx, cy, 2, 0, Math.PI*2); miniCtx.fill();
+          State.world.fragments.forEach((f) => {
+            if (
+              f.active &&
+              f.x > State.player.x - cx &&
+              f.x < State.player.x + cx
+            ) {
+              ctx.fillStyle = Config.colors.fragment;
+              ctx.shadowBlur = 10;
+              ctx.shadowColor = Config.colors.fragment;
+              ctx.fillRect(f.x - 4, f.y - 4, 8, 8);
             }
-        };
+          });
+          ctx.shadowBlur = 0;
 
-        window.addEventListener('keydown', e => {
-            if(State.input.keys[e.key] !== undefined && !State.player.isTerminalOpen) State.input.keys[e.key] = true;
-            if(e.key === 'Enter' && State.player.isTerminalOpen) {
-                const term = document.getElementById('term-input');
-                const val = term.value.trim();
-                if(val) { Terminal.print("> " + val, "#888"); Terminal.execute(val); term.value = ""; }
-                return;
+          ctx.fillStyle = "#fff";
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = "#fff";
+          ctx.beginPath();
+          ctx.arc(
+            State.player.x,
+            State.player.y,
+            State.player.size,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          ctx.restore();
+
+          let r = Config.baseLightRadius * State.player.lightLevel;
+          let g = ctx.createRadialGradient(cx, cy, 10, cx, cy, r);
+          g.addColorStop(0, "rgba(0,0,0,0)");
+          g.addColorStop(1, "rgba(0,0,0,1)");
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          ctx.save();
+          ctx.translate(cx - State.player.x, cy - State.player.y);
+          if (State.world.beacon.active) {
+            let b = State.world.beacon;
+            b.pulse += 0.05;
+            let sz = 20 + Math.sin(b.pulse) * 5;
+            ctx.fillStyle = Config.colors.beacon;
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = "#00f3ff";
+            ctx.fillRect(b.x - sz / 2, b.y - sz / 2, sz, sz);
+          }
+          if (State.world.portal.active) {
+            let p = State.world.portal;
+            p.pulse += 0.1;
+            let sz = 40 + Math.sin(p.pulse) * 5;
+            ctx.fillStyle = "#000";
+            ctx.strokeStyle = Config.colors.portal;
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = Config.colors.portal;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, sz, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          Render.miniMap();
+        },
+        miniMap: () => {
+          miniCtx.fillStyle = "#000";
+          miniCtx.fillRect(0, 0, 140, 140);
+          const s = 0.05,
+            cx = 70,
+            cy = 70;
+
+          if (State.world.beacon.active) {
+            let rx = (State.world.beacon.x - State.player.x) * s,
+              ry = (State.world.beacon.y - State.player.y) * s;
+            if (Math.abs(rx) < 70 && Math.abs(ry) < 70) {
+              miniCtx.fillStyle = "#fff";
+              miniCtx.fillRect(cx + rx - 3, cy + ry - 3, 6, 6);
             }
-            if(e.key === 'Tab') { e.preventDefault(); Terminal.toggle(); return; }
-            if(["1","2","3","4","5"].includes(e.key) && State.phase === 'active' && !State.player.isTerminalOpen) {
-                const cmd = State.hotbar[e.key]; if(cmd) Terminal.execute(cmd);
+          }
+          if (State.world.portal.active) {
+            let rx = (State.world.portal.x - State.player.x) * s,
+              ry = (State.world.portal.y - State.player.y) * s;
+            if (Math.abs(rx) < 70 && Math.abs(ry) < 70) {
+              miniCtx.fillStyle = "#bd00ff";
+              miniCtx.beginPath();
+              miniCtx.arc(cx + rx, cy + ry, 4, 0, Math.PI * 2);
+              miniCtx.fill();
             }
-        });
-        window.addEventListener('keyup', e => { if(State.input.keys[e.key] !== undefined) State.input.keys[e.key] = false; });
+          }
+          if (State.phase === "active" || State.phase === "tutorial") {
+            miniCtx.fillStyle = Config.colors.fragment;
+            State.world.fragments.forEach((f) => {
+              if (f.active) {
+                let rx = (f.x - State.player.x) * s,
+                  ry = (f.y - State.player.y) * s;
+                if (Math.abs(rx) < 70 && Math.abs(ry) < 70) {
+                  if (State.player.scanActive)
+                    miniCtx.fillRect(cx + rx, cy + ry, 2, 2);
+                }
+              }
+            });
+          }
+          miniCtx.fillStyle = "#fff";
+          miniCtx.beginPath();
+          miniCtx.arc(cx, cy, 2, 0, Math.PI * 2);
+          miniCtx.fill();
+        },
+      };
 
-        Game.init();
-        function loop() { Game.update(); Render.loop(); requestAnimationFrame(loop); }
-        loop();
+      window.addEventListener("keydown", (e) => {
+        if (
+          State.input.keys[e.key] !== undefined &&
+          !State.player.isTerminalOpen
+        )
+          State.input.keys[e.key] = true;
+        if (e.key === "Enter" && State.player.isTerminalOpen) {
+          const term = document.getElementById("term-input");
+          const val = term.value.trim();
+          if (val) {
+            Terminal.print("> " + val, "#888");
+            Terminal.execute(val);
+            term.value = "";
+          }
+          return;
+        }
+        if (e.key === "Tab") {
+          e.preventDefault();
+          Terminal.toggle();
+          return;
+        }
+        if (
+          ["1", "2", "3", "4", "5"].includes(e.key) &&
+          State.phase === "active" &&
+          !State.player.isTerminalOpen
+        ) {
+          const cmd = State.hotbar[e.key];
+          if (cmd) Terminal.execute(cmd);
+        }
+      });
+      window.addEventListener("keyup", (e) => {
+        if (State.input.keys[e.key] !== undefined)
+          State.input.keys[e.key] = false;
+      });
 
+      Game.init();
+      function loop() {
+        Game.update();
+        Render.loop();
+        requestAnimationFrame(loop);
+      }
+      loop();
     </script>
-</body>
+  </body>
 </html>
