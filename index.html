@@ -3,15 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>0110: CHAPTER 1</title>
+    <title>0110-The Institute (Chapter 0)</title>
     <style>
-      /* --- CORE STYLES --- */
+      /* --- UNIFIED DESIGN SYSTEM (MATCHING CHAPTER 2) --- */
       :root {
         --primary: #00f3ff;
-        --secondary: #bd00ff;
-        --terminal: #00ff00;
-        --bg-glass: rgba(0, 10, 5, 0.95);
+        --secondary: #bd00ff; /* Portal Color */
+        --combat: #ff3333;
+        --terminal-text: #00ff00;
+        --terminal-border: #00ff00;
+        --passive: #888888;
+        --bg-glass: rgba(5, 10, 15, 0.95);
         --margin: 30px;
+        --obj-bg: rgba(0, 20, 20, 0.9);
+        --obj-border: #004444;
       }
 
       body {
@@ -23,370 +28,261 @@
         user-select: none;
       }
 
-      canvas {
-        display: block;
-        cursor: none;
-      }
-      .hud-element {
-        cursor: default;
-      }
-      .clickable {
-        cursor: pointer;
-      }
+      canvas { display: block; }
+      .hud-element { cursor: default; }
+      .clickable { cursor: pointer; }
 
       /* --- CINEMATICS --- */
-      #cinematic-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: black;
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        pointer-events: none;
+      #cinematic-overlay, #story-overlay, #fade-overlay, #overlay-screen {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        pointer-events: none; z-index: 9999;
+      }
+      #cinematic-overlay { background: black; transition: opacity 2s; }
+      #story-overlay { background: black; opacity: 0; transition: opacity 2s; z-index: 9998; }
+      #fade-layer { 
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+        background: white; pointer-events: none; z-index: 20000; 
+        opacity: 0; transition: opacity 3s; 
       }
 
-      .title-text {
-        font-size: 80px;
-        font-weight: bold;
-        letter-spacing: 15px;
-        opacity: 0;
-        transition: opacity 2s;
-        text-shadow: 0 0 30px white;
-        text-align: center;
+      /* TEXT STYLES */
+      .title-text { 
+        font-size: 80px; font-weight: bold; letter-spacing: 15px; 
+        text-shadow: 0 0 30px white; text-align: center; 
+        opacity: 0; transition: opacity 2s ease-in-out; 
       }
-      .subtitle-text {
-        font-size: 24px;
-        letter-spacing: 8px;
-        color: var(--primary);
-        margin-top: 20px;
-        opacity: 0;
-        transition: opacity 2s;
-        text-align: center;
+      .subtitle-text { 
+        font-size: 24px; letter-spacing: 8px; color: var(--primary); 
+        margin-top: 20px; text-align: center; 
+        opacity: 0; transition: opacity 2s ease-in-out; 
       }
       .dev-text {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 18px;
-        letter-spacing: 4px;
-        color: #888;
-        opacity: 0;
-        transition: opacity 1s;
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        font-size: 20px; letter-spacing: 4px; color: #888; 
+        opacity: 0; transition: opacity 1s;
       }
 
-      /* GLITCH */
+      #story-content { max-width: 600px; text-align: center; color: #ddd; }
+      #story-content h2 { font-size: 32px; color: var(--primary); margin-bottom: 20px; letter-spacing: 5px; }
+      #story-content p { font-size: 16px; line-height: 1.6; letter-spacing: 1px; }
+
+      /* GLITCH FX */
       #glitch-layer {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: repeating-linear-gradient(
-          0deg,
-          transparent,
-          transparent 2px,
-          #00f3ff 2px,
-          #00f3ff 4px
-        );
-        opacity: 0;
-        pointer-events: none;
-        mix-blend-mode: overlay;
-        z-index: 10000;
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: repeating-linear-gradient(0deg, transparent, transparent 2px, #00f3ff 2px, #00f3ff 4px);
+        opacity: 0; pointer-events: none; mix-blend-mode: overlay; z-index: 10000;
       }
-      .glitch-active {
-        animation: noise 0.2s infinite;
-        opacity: 0.3 !important;
-      }
+      .glitch-active { animation: noise 0.2s infinite; opacity: 0.3 !important; }
       @keyframes noise {
-        0% {
-          transform: translate(0, 0);
-        }
-        20% {
-          transform: translate(-5px, 5px);
-        }
-        40% {
-          transform: translate(5px, -5px);
-        }
-        100% {
-          transform: translate(0, 0);
-        }
+        0% { transform: translate(0, 0); }
+        20% { transform: translate(-5px, 5px); }
+        40% { transform: translate(5px, -5px); }
+        100% { transform: translate(0, 0); }
       }
+
+      /* --- PAUSE OVERLAY --- */
+      #pause-overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex; justify-content: center; align-items: center;
+        z-index: 900; pointer-events: none; opacity: 0; transition: opacity 0.2s;
+        backdrop-filter: blur(2px);
+      }
+      #pause-overlay.visible { opacity: 1; pointer-events: auto; }
+      #pause-text { font-size: 40px; color: #fff; letter-spacing: 10px; text-shadow: 0 0 20px #fff; }
 
       /* --- UI LAYOUT --- */
       #ui-layer {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         pointer-events: none;
       }
-      .locked {
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 2s;
-      }
-      .unlocked {
-        opacity: 1;
-        visibility: visible;
-      }
+      .locked { opacity: 0; visibility: hidden; transition: opacity 2s; }
+      .unlocked { opacity: 1; visibility: visible; }
 
+      /* TOP LEFT */
       #hud-top-left {
-        position: absolute;
-        top: var(--margin);
-        left: var(--margin);
-        width: 350px;
-        pointer-events: auto;
+        position: absolute; top: var(--margin); left: var(--margin);
+        width: 350px; pointer-events: auto; text-shadow: 0 1px 2px black;
       }
       .log-entry {
-        font-size: 13px;
-        margin-bottom: 4px;
-        opacity: 0.8;
-        color: var(--primary);
-        text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+        font-size: 13px; margin-bottom: 4px; opacity: 0.6; transition: opacity 0.5s;
+        color: var(--primary); text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
       }
+      #coords-display { margin-top: 10px; font-size: 12px; color: #888; letter-spacing: 1px; }
 
+      /* TOP RIGHT */
       #hud-top-right {
-        position: absolute;
-        top: var(--margin);
-        right: var(--margin);
-        pointer-events: auto;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
+        position: absolute; top: var(--margin); right: var(--margin);
+        display: flex; flex-direction: column; align-items: flex-end;
+        pointer-events: auto; z-index: 1000;
       }
       #menu-icon {
-        font-size: 24px;
-        color: var(--primary);
-        padding: 10px;
-        background: rgba(0, 0, 0, 0.5);
-        transition: 0.2s;
-        border: 1px solid transparent;
+        font-size: 24px; color: var(--primary); padding: 5px; cursor: pointer;
+        background: rgba(0, 0, 0, 0.5); transition: 0.2s; border: 1px solid transparent;
       }
-      #menu-icon:hover {
-        text-shadow: 0 0 10px var(--primary);
-        border-color: var(--primary);
-      }
+      #menu-icon:hover { border-color: var(--primary); }
       #menu-dropdown {
-        display: none;
-        margin-top: 10px;
-        background: var(--bg-glass);
-        border: 1px solid var(--primary);
-        min-width: 150px;
+        display: none; margin-top: 10px; background: var(--bg-glass);
+        border: 1px solid var(--primary); min-width: 140px;
       }
-      #menu-dropdown.show {
-        display: block;
-      }
+      #menu-dropdown.show { display: block; }
       .menu-item {
-        padding: 12px;
-        font-size: 12px;
-        color: #ccc;
-        border-bottom: 1px solid #333;
-        transition: 0.2s;
+        padding: 10px; font-size: 12px; color: #ccc; cursor: pointer;
+        border-bottom: 1px solid #333; transition: 0.2s;
       }
-      .menu-item:hover {
-        background: rgba(0, 243, 255, 0.2);
-        color: white;
-      }
+      .menu-item:hover { background: rgba(0, 243, 255, 0.1); color: white; }
 
+      /* BOTTOM LEFT */
       #hud-bottom-left {
-        position: absolute;
-        bottom: var(--margin);
-        left: var(--margin);
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-        pointer-events: auto;
+        position: absolute; bottom: var(--margin); left: var(--margin);
+        display: flex; flex-direction: column; gap: 8px; pointer-events: auto;
       }
       #data-bank {
-        font-size: 14px;
-        color: var(--primary);
-        font-weight: bold;
-        background: rgba(0, 0, 0, 0.5);
-        padding: 5px 10px;
-        border-left: 3px solid var(--primary);
+        font-size: 14px; color: var(--primary); font-weight: bold;
+        background: rgba(0, 0, 0, 0.5); padding: 5px 10px;
+        border-left: 3px solid var(--primary); transition: 0.3s;
       }
       #minimap-container {
-        width: 140px;
-        height: 140px;
-        border-radius: 50%;
-        border: 2px solid #333;
-        background: #000;
-        overflow: hidden;
-        position: relative;
+        width: 140px; height: 140px; border-radius: 50%; border: 2px solid #333;
+        background: #000; overflow: hidden; position: relative;
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
       }
-      #minimap-canvas {
-        width: 100%;
-        height: 100%;
-        opacity: 0.8;
+      #minimap-canvas { width: 100%; height: 100%; opacity: 0.9; }
+      #minimap-border {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        border-radius: 50%; border: 1px solid var(--primary);
+        box-shadow: inset 0 0 10px var(--primary); pointer-events: none;
       }
 
+      /* BOTTOM CENTER */
       #hud-bottom-center {
-        position: absolute;
-        bottom: var(--margin);
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 500px;
-        pointer-events: auto;
+        position: absolute; bottom: var(--margin); left: 50%; transform: translateX(-50%);
+        display: flex; flex-direction: column; align-items: center;
+        width: 500px; pointer-events: auto;
       }
-      .stats-row {
-        display: flex;
-        gap: 15px;
-        width: 100%;
-        margin-bottom: 12px;
-      }
-      .bar-wrapper {
-        flex: 1;
-      }
-      .bar-container {
-        height: 6px;
-        background: #111;
-        border: 1px solid #444;
-      }
-      #bar-health {
-        background: #888;
-        height: 100%;
-        width: 100%;
-      }
-      #bar-light {
-        background: #ccc;
-        height: 100%;
-        width: 100%;
-        box-shadow: 0 0 5px #ccc;
-      }
-      .bar-label {
-        font-size: 10px;
-        margin-bottom: 4px;
-        display: block;
-        color: #aaa;
-      }
-      #hotbar {
-        display: flex;
-        gap: 5px;
-        width: 100%;
-      }
+      .stats-row { display: flex; gap: 15px; width: 100%; margin-bottom: 12px; }
+      .bar-wrapper { flex: 1; }
+      .bar-container { height: 6px; background: #111; border: 1px solid #444; position: relative; }
+      #bar-health { background: var(--passive); height: 100%; width: 100%; transition: width 0.2s; }
+      #bar-light { background: #ccc; height: 100%; width: 100%; box-shadow: 0 0 5px #ccc; }
+      .bar-label { font-size: 10px; margin-bottom: 4px; display: block; color: #aaa; }
+      #hotbar { display: flex; gap: 5px; width: 100%; transition: opacity 0.3s; }
       .slot {
-        flex: 1;
-        height: 45px;
-        background: rgba(20, 20, 20, 0.6);
-        border: 1px solid #444;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: #555;
-        font-size: 12px;
+        flex: 1; height: 45px; background: rgba(20, 20, 20, 0.6);
+        border: 1px solid #444; display: flex; justify-content: center;
+        align-items: center; color: #666; font-size: 10px; position: relative;
       }
 
+      /* BOTTOM RIGHT (TERMINAL) */
       #hud-bottom-right {
-        position: absolute;
-        bottom: var(--margin);
-        right: var(--margin);
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        pointer-events: auto;
+        position: absolute; bottom: var(--margin); right: var(--margin);
+        display: flex; flex-direction: column; align-items: flex-end;
+        pointer-events: auto; z-index: 100;
       }
       #tablet-icon {
-        width: 50px;
-        height: 60px;
-        background: var(--bg-glass);
-        border: 1px solid var(--primary);
-        border-radius: 4px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        color: var(--primary);
-        font-size: 20px;
-        z-index: 20;
+        width: 50px; height: 50px; background: var(--bg-glass);
+        border: 1px solid var(--primary); border-radius: 4px;
+        display: flex; justify-content: center; align-items: center;
+        cursor: pointer; color: var(--primary); font-size: 20px;
+        z-index: 101; transition: 0.3s;
       }
-      #terminal-wrapper {
-        position: absolute;
-        bottom: 75px;
-        right: 0;
-        width: 450px;
-        height: 0;
-        background: var(--bg-glass);
-        border: 1px solid #444;
-        overflow: hidden;
-        transition: height 0.5s;
-        border-radius: 4px 4px 0 0;
-        display: flex;
-        flex-direction: column;
-      }
-      #terminal-wrapper.open {
-        height: 500px;
-        border-color: var(--terminal);
-        box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
-      }
-      .term-header {
-        background: #051a05;
-        padding: 10px;
-        font-size: 12px;
-        color: #4f4;
-        text-align: center;
-        border-bottom: 1px solid #141;
-      }
-      #term-output {
-        flex-grow: 1;
-        padding: 20px;
-        font-family: "Consolas", monospace;
-        font-size: 14px;
-        color: var(--terminal);
-        line-height: 1.6;
-        overflow-y: scroll;
-        scrollbar-width: none;
-      }
-      #term-output::-webkit-scrollbar {
-        display: none;
-      }
-      #term-input-line {
-        display: flex;
-        padding: 15px;
-        background: #000;
-        border-top: 1px solid #141;
-      }
-      #term-input {
-        background: transparent;
-        border: none;
-        color: var(--terminal);
-        font-family: "Consolas", monospace;
-        font-size: 14px;
-        flex-grow: 1;
-        outline: none;
+      #tablet-icon:hover {
+        text-shadow: 0 0 10px var(--primary);
+        box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
       }
 
-      #fade-layer {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: white;
-        pointer-events: none;
-        z-index: 20000;
-        opacity: 0;
-        transition: opacity 3s;
+      /* TERMINAL ANIMATION (Line Draw Effect) */
+      #terminal-wrapper {
+        position: absolute; bottom: 60px; right: 0;
+        
+        width: 0; height: 0; opacity: 0; /* Collapsed */
+        
+        background: rgba(5, 15, 5, 0.98);
+        border: 1px solid var(--terminal-border);
+        border-radius: 6px;
+        display: flex; flex-direction: column;
+        
+        transform-origin: bottom right;
+        overflow: hidden;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+
+        /* Closing Sequence */
+        transition: 
+            opacity 0.1s linear 0.6s,
+            height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s,
+            width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
+      }
+
+      #terminal-wrapper.open {
+        /* Open Dimensions */
+        width: clamp(300px, 30vw, 500px);
+        height: clamp(300px, 40vh, 600px);
+        opacity: 1;
+
+        /* Opening Sequence */
+        transition: 
+            opacity 0.1s linear 0s,
+            width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s,
+            height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
+      }
+
+      .term-header {
+        background: #000; padding: 8px 12px; font-size: 11px;
+        color: var(--terminal-text); display: flex; justify-content: space-between;
+        border-bottom: 1px solid #222; letter-spacing: 1px;
+      }
+      #term-output {
+        flex-grow: 1; padding: 15px; overflow-y: auto;
+        font-family: "Consolas", monospace; font-size: 12px;
+        color: var(--terminal-text); line-height: 1.5; scrollbar-width: none;
+      }
+      #term-output::-webkit-scrollbar { display: none; }
+      #term-input-line {
+        display: flex; padding: 12px; background: #000; border-top: 1px solid #222;
+      }
+      #term-input {
+        background: transparent; border: none; color: var(--terminal-text);
+        font-family: "Consolas", monospace; font-size: 13px; flex-grow: 1; outline: none;
       }
     </style>
   </head>
   <body>
     <div id="fade-layer"></div>
     <div id="glitch-layer"></div>
+    
     <div id="cinematic-overlay">
       <div id="intro-title" class="title-text">0110</div>
       <div id="intro-sub" class="subtitle-text">THE INSTITUTE</div>
-      <div id="intro-dev" class="dev-text">A Samir C Production</div>
+      <div id="intro-dev" class="dev-text" style="font-size: 18px;">A Samir C Production</div>
+    </div>
+
+    <div id="story-overlay">
+      <div id="story-content">
+        <h2>0. The Invitation</h2>
+        <p>
+          Will received a mysterious email inviting him to a virtual world called <b>The Metaphor</b>. He ignored it until one line caught his attention, <i>his friend Andrew was waiting there.</i><br><br>
+
+When Andrew suddenly went missing, Will searched his house and found the same emails. Andrew had tried to escape, but failed.<br><br>
+
+Will replied, demanding answers. A link and a voice note appeared. It was Andrew, inviting him in, but something felt wrong.<br><br>
+
+Will refused, but his screen turned on by itself. A strange video began to play, and his body went numb.<br><br>
+
+He was pulled in.<br><br>
+
+Into the void.<br><br>
+
+Read the full story on <a href="story.html" style="color: var(--primary); text-decoration: underline">0110-game-docs</a>. Thanks for playing the demo.
+
+        </p>
+        <p style="color: var(--primary); text-align: center; margin-top: 20px;">Tips: Use 'WASD' to move around.</p>
+        <p style="font-size: 14px; color: #888; text-align: center;">Version 1.01</p>
+      </div>
+    </div>
+
+    <div id="pause-overlay">
+      <div id="pause-text">PAUSED</div>
     </div>
 
     <div id="ui-layer">
@@ -396,23 +292,16 @@
         </div>
         <div id="coords-display">LOC: [0, 0]</div>
       </div>
+
       <div id="hud-top-right" class="hud-element locked">
         <div id="menu-icon" class="clickable" onclick="UI.toggleMenu()">☰</div>
         <div id="menu-dropdown">
-          <div
-            class="menu-item clickable"
-            onclick="UI.log('SAVING DISABLED (TUTORIAL)')"
-          >
-            SAVE
-          </div>
-          <div class="menu-item clickable" onclick="UI.log('SETTINGS')">
-            SETTINGS
-          </div>
-          <div class="menu-item clickable" onclick="location.reload()">
-            REBOOT
-          </div>
+          <div class="menu-item clickable" onclick="UI.log('SAVING DISABLED (TUTORIAL)')">SAVE</div>
+          <div class="menu-item clickable" onclick="UI.log('SETTINGS')">SETTINGS</div>
+          <div class="menu-item clickable" onclick="location.reload()">REBOOT</div>
         </div>
       </div>
+
       <div id="hud-bottom-left" class="hud-element locked">
         <div id="data-bank">DATA: 0 MB</div>
         <div id="minimap-container">
@@ -420,6 +309,7 @@
           <div id="minimap-border"></div>
         </div>
       </div>
+
       <div id="hud-bottom-center" class="hud-element locked">
         <div class="stats-row">
           <div class="bar-wrapper">
@@ -439,20 +329,20 @@
           <div class="slot" id="slot-5">5</div>
         </div>
       </div>
+
       <div id="hud-bottom-right" class="hud-element locked">
         <div id="terminal-wrapper">
           <div class="term-header">
-            CONNECTION: SECURE // USER: WilliamHayes
+            <span>CONNECTION: SECURE</span>
+            <span>USER: WilliamHayes</span>
           </div>
           <div id="term-output"></div>
           <div id="term-input-line">
-            <span style="color: #0f0; margin-right: 10px">></span
-            ><input type="text" id="term-input" autocomplete="off" />
+            <span style="color: var(--terminal-text); margin-right: 10px">></span>
+            <input type="text" id="term-input" autocomplete="off" />
           </div>
         </div>
-        <div id="tablet-icon" class="clickable" onclick="Terminal.toggle()">
-          &lt;/&gt;
-        </div>
+        <div id="tablet-icon" class="clickable" onclick="Terminal.toggle()">&lt;/&gt;</div>
       </div>
     </div>
 
@@ -474,16 +364,9 @@
       const State = {
         phase: "intro",
         player: {
-          x: 0,
-          y: 0,
-          vx: 0,
-          vy: 0,
-          size: 10,
-          data: 0,
-          lightLevel: 1.0,
-          isTerminalOpen: false,
-          scanActive: false,
-          scanTimer: 0,
+          x: 0, y: 0, vx: 0, vy: 0, size: 10,
+          data: 0, lightLevel: 1.0,
+          isTerminalOpen: false, scanActive: false, scanTimer: 0,
         },
         world: {
           fragments: [],
@@ -511,7 +394,9 @@
           const dev = document.getElementById("intro-dev");
           const glitch = document.getElementById("glitch-layer");
           const overlay = document.getElementById("cinematic-overlay");
+          const story = document.getElementById("story-overlay");
 
+          // 1. Cinematic Sequence
           await Utils.wait(500);
           title.style.opacity = 1;
           sub.style.opacity = 1;
@@ -522,11 +407,20 @@
           dev.style.opacity = 1;
           await Utils.wait(2500);
           dev.style.opacity = 0;
+          
+          // 2. Transition to Story
           await Utils.wait(500);
+          overlay.style.opacity = 0; // Hide first overlay
+          
+          story.style.opacity = 1; // Show Story
+          await Utils.wait(20000);
+          story.style.opacity = 0; // Hide Story
+          await Utils.wait(1000);
+
+          // 3. Glitch Effect & Start
           glitch.classList.add("glitch-active");
           await Utils.wait(500);
           glitch.classList.remove("glitch-active");
-          overlay.style.opacity = 0;
 
           State.phase = "void";
           Game.spawnBeacon();
@@ -535,14 +429,8 @@
 
       const UI = {
         update: () => {
-          document.getElementById(
-            "coords-display"
-          ).innerText = `LOC: [${Math.floor(State.player.x)}, ${Math.floor(
-            State.player.y
-          )}]`;
-          document.getElementById(
-            "data-bank"
-          ).innerText = `DATA: ${State.player.data} MB`;
+          document.getElementById("coords-display").innerText = `LOC: [${Math.floor(State.player.x)}, ${Math.floor(State.player.y)}]`;
+          document.getElementById("data-bank").innerText = `DATA: ${State.player.data} MB`;
         },
         log: (msg) => {
           const l = document.getElementById("system-log");
@@ -609,10 +497,7 @@
           Terminal.print("  sys.lumos  - Enhance Light (50 MB)", "#ccc");
           Terminal.print("  sys.scan   - Highlight Loot (50 MB)", "#ccc");
           Terminal.print("  /bind [k] [cmd] - Assign Keys", "#ccc");
-          Terminal.print(
-            "n: TRY ABOVE COMMANDS BEFORE ENTERING THE RIFT.",
-            "#ccc"
-          );
+          Terminal.print("n: TRY ABOVE COMMANDS BEFORE ENTERING THE RIFT.", "#ccc");
           Terminal.print("OBJECTIVE: ENTER THE RIFT TO ESCAPE.", "#bd00ff");
           State.phase = "active";
           Game.spawnPortal();
@@ -696,14 +581,10 @@
           if (State.phase === "intro" || State.phase === "end") return;
           const timeScale = State.player.isTerminalOpen ? 0.1 : 1.0;
 
-          if (State.input.keys.w)
-            State.player.vy -= Config.player.accel * timeScale;
-          if (State.input.keys.s)
-            State.player.vy += Config.player.accel * timeScale;
-          if (State.input.keys.a)
-            State.player.vx -= Config.player.accel * timeScale;
-          if (State.input.keys.d)
-            State.player.vx += Config.player.accel * timeScale;
+          if (State.input.keys.w) State.player.vy -= Config.player.accel * timeScale;
+          if (State.input.keys.s) State.player.vy += Config.player.accel * timeScale;
+          if (State.input.keys.a) State.player.vx -= Config.player.accel * timeScale;
+          if (State.input.keys.d) State.player.vx += Config.player.accel * timeScale;
           State.player.vx *= Config.player.friction;
           State.player.vy *= Config.player.friction;
           State.player.x += State.player.vx * timeScale;
@@ -723,29 +604,19 @@
             const dy = State.player.y - State.world.portal.y;
             if (Math.sqrt(dx * dx + dy * dy) < 60) {
               State.phase = "end";
-
-              // --- SAVE DATA BEFORE TRANSITION ---
               Terminal.print(">> UPLOADING CONSCIOUSNESS...", "#bd00ff");
               const saveData = {
                 data: State.player.data,
                 lightLevel: State.player.lightLevel,
               };
               localStorage.setItem("0110_save", JSON.stringify(saveData));
-
               document.getElementById("fade-layer").style.opacity = 1;
-              setTimeout(() => {
-                window.location.href = "game.html";
-              }, 3000);
+              setTimeout(() => { window.location.href = "game.html"; }, 3000);
             }
           }
 
           State.world.fragments.forEach((f) => {
-            if (
-              f.active &&
-              Math.sqrt(
-                (State.player.x - f.x) ** 2 + (State.player.y - f.y) ** 2
-              ) < 20
-            ) {
+            if (f.active && Math.sqrt((State.player.x - f.x) ** 2 + (State.player.y - f.y) ** 2) < 20) {
               f.active = false;
               State.player.data += 10;
               UI.log("DATA MINED: +10 MB");
@@ -761,8 +632,7 @@
         loop: () => {
           ctx.fillStyle = "#050505";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          const cx = canvas.width / 2,
-            cy = canvas.height / 2;
+          const cx = canvas.width / 2, cy = canvas.height / 2;
           ctx.save();
           ctx.translate(cx - State.player.x, cy - State.player.y);
 
@@ -773,30 +643,16 @@
           ctx.strokeStyle = Config.colors.grid;
           ctx.lineWidth = 1;
           ctx.beginPath();
-          for (
-            let x = sc * Config.gridSize;
-            x <= ec * Config.gridSize;
-            x += Config.gridSize
-          ) {
-            ctx.moveTo(x, State.player.y - cy);
-            ctx.lineTo(x, State.player.y + cy);
+          for (let x = sc * Config.gridSize; x <= ec * Config.gridSize; x += Config.gridSize) {
+            ctx.moveTo(x, State.player.y - cy); ctx.lineTo(x, State.player.y + cy);
           }
-          for (
-            let y = sr * Config.gridSize;
-            y <= er * Config.gridSize;
-            y += Config.gridSize
-          ) {
-            ctx.moveTo(State.player.x - cx, y);
-            ctx.lineTo(State.player.x + cx, y);
+          for (let y = sr * Config.gridSize; y <= er * Config.gridSize; y += Config.gridSize) {
+            ctx.moveTo(State.player.x - cx, y); ctx.lineTo(State.player.x + cx, y);
           }
           ctx.stroke();
 
           State.world.fragments.forEach((f) => {
-            if (
-              f.active &&
-              f.x > State.player.x - cx &&
-              f.x < State.player.x + cx
-            ) {
+            if (f.active && f.x > State.player.x - cx && f.x < State.player.x + cx) {
               ctx.fillStyle = Config.colors.fragment;
               ctx.shadowBlur = 10;
               ctx.shadowColor = Config.colors.fragment;
@@ -806,19 +662,11 @@
           ctx.shadowBlur = 0;
 
           ctx.fillStyle = "#fff";
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = "#fff";
+          ctx.shadowBlur = 15; ctx.shadowColor = "#fff";
           ctx.beginPath();
-          ctx.arc(
-            State.player.x,
-            State.player.y,
-            State.player.size,
-            0,
-            Math.PI * 2
-          );
+          ctx.arc(State.player.x, State.player.y, State.player.size, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
-
           ctx.restore();
 
           let r = Config.baseLightRadius * State.player.lightLevel;
@@ -860,9 +708,7 @@
         miniMap: () => {
           miniCtx.fillStyle = "#000";
           miniCtx.fillRect(0, 0, 140, 140);
-          const s = 0.05,
-            cx = 70,
-            cy = 70;
+          const s = 0.05, cx = 70, cy = 70;
 
           if (State.world.beacon.active) {
             let rx = (State.world.beacon.x - State.player.x) * s,
@@ -889,8 +735,7 @@
                 let rx = (f.x - State.player.x) * s,
                   ry = (f.y - State.player.y) * s;
                 if (Math.abs(rx) < 70 && Math.abs(ry) < 70) {
-                  if (State.player.scanActive)
-                    miniCtx.fillRect(cx + rx, cy + ry, 2, 2);
+                  if (State.player.scanActive) miniCtx.fillRect(cx + rx, cy + ry, 2, 2);
                 }
               }
             });
@@ -903,10 +748,7 @@
       };
 
       window.addEventListener("keydown", (e) => {
-        if (
-          State.input.keys[e.key] !== undefined &&
-          !State.player.isTerminalOpen
-        )
+        if (State.input.keys[e.key] !== undefined && !State.player.isTerminalOpen)
           State.input.keys[e.key] = true;
         if (e.key === "Enter" && State.player.isTerminalOpen) {
           const term = document.getElementById("term-input");
@@ -923,11 +765,7 @@
           Terminal.toggle();
           return;
         }
-        if (
-          ["1", "2", "3", "4", "5"].includes(e.key) &&
-          State.phase === "active" &&
-          !State.player.isTerminalOpen
-        ) {
+        if (["1", "2", "3", "4", "5"].includes(e.key) && State.phase === "active" && !State.player.isTerminalOpen) {
           const cmd = State.hotbar[e.key];
           if (cmd) Terminal.execute(cmd);
         }
