@@ -128,25 +128,25 @@
         transition: opacity 1s;
       }
 
-      .title-text { 
-    font-size: 50px; 
-    font-weight: bold; 
-    letter-spacing: 15px; 
-    text-shadow: 0 0 30px white; 
-    text-align: center;
-    opacity: 0; /* Start hidden */
-    transition: opacity 2s ease-in-out; /* Smooth fade */
-}
+      .title-text {
+        font-size: 50px;
+        font-weight: bold;
+        letter-spacing: 15px;
+        text-shadow: 0 0 30px white;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 2s ease-in-out;
+      }
 
-.subtitle-text { 
-    font-size: 25px; 
-    letter-spacing: 8px; 
-    color: var(--primary); 
-    margin-top: 20px; 
-    text-align: center;
-    opacity: 0; /* Start hidden */
-    transition: opacity 2s ease-in-out; /* Smooth fade */
-}
+      .subtitle-text {
+        font-size: 25px;
+        letter-spacing: 8px;
+        color: var(--primary);
+        margin-top: 20px;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 2s ease-in-out;
+      }
 
       /* STORY TEXT STYLES */
       #story-content {
@@ -526,46 +526,35 @@
         text-shadow: 0 0 10px var(--hud-color);
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
       }
+
       /* TERMINAL ANIMATION UPDATE */
       #terminal-wrapper {
-        position: absolute; 
-        bottom: 60px; 
+        position: absolute;
+        bottom: 60px;
         right: 0;
-        
-        /* Initial State: Collapsed to a point/line */
         width: 0;
-        height: 0; 
+        height: 0;
         opacity: 0;
-        
-        background: rgba(5, 15, 5, 0.98); 
+        background: rgba(5, 15, 5, 0.98);
         border: 1px solid var(--terminal-border);
-        border-radius: 6px; 
-        display: flex; 
+        border-radius: 6px;
+        display: flex;
         flex-direction: column;
-        
-        /* Anchor to bottom-right corner */
-        transform-origin: bottom right; 
-        overflow: hidden; /* Essential to hide content during line animation */
+        transform-origin: bottom right;
+        overflow: hidden;
         box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-
-        /* CLOSING SEQUENCE: Height collapses -> Width collapses -> Fade out */
-        transition: 
-            opacity 0.1s linear 0.6s,               /* 3. Disappear after collapse */
-            height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s,   /* 1. Collapse Height first */
-            width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;  /* 2. Collapse Width (to line) */
+        transition: opacity 0.1s linear 0.6s,
+          height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s,
+          width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
       }
 
       #terminal-wrapper.open {
-        /* Open State Dimensions */
         width: clamp(200px, 30vw, 400px);
         height: clamp(300px, 40vh, 600px);
         opacity: 1;
-
-        /* OPENING SEQUENCE: Fade in -> Width expands (Line) -> Height expands */
-        transition: 
-            opacity 0.1s linear 0s,                 /* 1. Appear instantly */
-            width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s,    /* 2. Draw Line (Width) */
-            height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s; /* 3. Expand Box (Height) */
+        transition: opacity 0.1s linear 0s,
+          width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s,
+          height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
       }
       .term-header {
         background: #000;
@@ -626,28 +615,45 @@
     <div id="cinematic-overlay">
       <div id="intro-title" class="title-text">ENTERING</div>
       <div id="intro-sub" class="subtitle-text">"null"</div>
-      <div id="intro-sub" class="subtitle-text" style="font-size: 14px; color: #888;">Version  1.01</div>
+      <div
+        id="intro-sub"
+        class="subtitle-text"
+        style="font-size: 14px; color: #888"
+      >
+        Version 1.01
+      </div>
     </div>
 
     <div id="story-overlay">
       <div id="story-content">
         <h2>1. The Viod</h2>
         <p>
-          Will found himself in a dark, empty space, with light emitting from within him. Is he code? Why is he the source of light? He questioned himself.<br><br>
-
-He soon realized this world is a coded reality, and to survive, he must understand its language. In the void, he felt lost, alone, and uncertain.<br><br>
-
-But something else was here, hidden in the darkness, something even the system could not recognize. Now he must move forward, searching for his friend and a way out.<br><br>
-
-Can he survive the darkness? Can he find his friend? Can he escape the void?<br><br>
-
-The journey begins now.<br><br>
-
-Read the full story on <a href="story.html" target="_blank" style="color: var(--primary); text-decoration: underline">0110-game-docs</a>. Thanks for playing the demo.
-
+          Will found himself in a dark, empty space, with light emitting from
+          within him. Is he code? Why is he the source of light? He questioned
+          himself.<br /><br />
+          He soon realized this world is a coded reality, and to survive, he
+          must understand its language. In the void, he felt lost, alone, and
+          uncertain.<br /><br />
+          But something else was here, hidden in the darkness, something even
+          the system could not recognize. Now he must move forward, searching
+          for his friend and a way out.<br /><br />
+          Can he survive the darkness? Can he find his friend? Can he escape the
+          void?<br /><br />
+          The journey begins now.<br /><br />
+          Read the full story on
+          <a
+            href="story.html"
+            target="_blank"
+            style="color: var(--primary); text-decoration: underline"
+            >0110-game-docs</a
+          >. Thanks for playing the demo.
         </p>
-        <p style="color: var(--primary); text-align: center;">A Samir C Production</p>
-        <p style="font-size: 14px; color: #888; text-align: center;">Version  1.01</p>
+        <p style="color: var(--primary); text-align: center">
+          A Samir C Production
+        </p>
+        <p style="font-size: 14px; color: #888; text-align: center">
+          Version 1.01
+        </p>
       </div>
     </div>
 
@@ -672,7 +678,13 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
           <div class="menu-item" onclick="SaveSystem.reboot()">
             REBOOT SYSTEM
           </div>
-          <div class="menu-item" id="btn-bgm-toggle" onclick="AudioSystem.toggleBGM()">MUTE BGM</div>
+          <div
+            class="menu-item"
+            id="btn-bgm-toggle"
+            onclick="AudioSystem.toggleBGM()"
+          >
+            MUTE BGM
+          </div>
         </div>
       </div>
       <div id="hud-bottom-left" class="hud-element">
@@ -774,10 +786,7 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
           baseEnemyDmg: 10,
         },
         audio: {
-          // BGM PLAYLIST: Add your music file paths here
           bgm: ["bgm1.mp3", "bgm2.mp3", "bgm3.mp3"],
-
-          // SFX MAPPING: Add your sound effect file paths here
           sfx: {
             term_open: "term.mp3",
             term_close: "term.mp3",
@@ -785,8 +794,8 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
             obj_toggle: "obj.mp3",
             obj_update: "obj2.mp3",
             log: "",
-            intro_hit: "on2.wav", // Sound for "ENTERING NULL"
-            story_ambience: "", // Sound for Story text
+            intro_hit: "on2.wav",
+            story_ambience: "",
           },
         },
       };
@@ -796,7 +805,7 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
         bgmTrack: null,
         currentTrackIndex: 0,
         active: false,
-        muted: false, // New State
+        muted: false,
 
         init: () => {
           if (AudioSystem.active) return;
@@ -806,50 +815,48 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
 
         playNextBGM: () => {
           if (!Config.audio.bgm || Config.audio.bgm.length === 0) return;
-          
+
           if (AudioSystem.bgmTrack) {
             AudioSystem.bgmTrack.pause();
             AudioSystem.bgmTrack = null;
           }
 
           const src = Config.audio.bgm[AudioSystem.currentTrackIndex];
-          if(!src) return;
+          if (!src) return;
 
           AudioSystem.bgmTrack = new Audio(src);
           AudioSystem.bgmTrack.volume = 0.3;
-          
-          // Respect mute state on new track load
-          if(AudioSystem.muted) AudioSystem.bgmTrack.muted = true;
 
-          AudioSystem.bgmTrack.play().catch(e => console.log("Waiting for interaction..."));
-          
-          AudioSystem.bgmTrack.addEventListener('ended', () => {
-            AudioSystem.currentTrackIndex = (AudioSystem.currentTrackIndex + 1) % Config.audio.bgm.length;
+          if (AudioSystem.muted) AudioSystem.bgmTrack.muted = true;
+
+          AudioSystem.bgmTrack
+            .play()
+            .catch((e) => console.log("Waiting for interaction..."));
+
+          AudioSystem.bgmTrack.addEventListener("ended", () => {
+            AudioSystem.currentTrackIndex =
+              (AudioSystem.currentTrackIndex + 1) % Config.audio.bgm.length;
             AudioSystem.playNextBGM();
           });
         },
 
-        // NEW FUNCTION: Toggle Mute
         toggleBGM: () => {
-            AudioSystem.muted = !AudioSystem.muted;
-            if(AudioSystem.bgmTrack) {
-                AudioSystem.bgmTrack.muted = AudioSystem.muted;
-            }
-            
-            // Update Menu Text
-            const btn = document.getElementById('btn-bgm-toggle');
-            if(btn) btn.innerText = AudioSystem.muted ? "UNMUTE BGM" : "MUTE BGM";
-            
-            // Optional: Close menu after click for cleaner UX, or keep open
-            // UISystem.toggleMenu(); 
+          AudioSystem.muted = !AudioSystem.muted;
+          if (AudioSystem.bgmTrack) {
+            AudioSystem.bgmTrack.muted = AudioSystem.muted;
+          }
+
+          const btn = document.getElementById("btn-bgm-toggle");
+          if (btn)
+            btn.innerText = AudioSystem.muted ? "UNMUTE BGM" : "MUTE BGM";
         },
 
         playSFX: (key) => {
           if (!Config.audio.sfx[key]) return;
           const sfx = new Audio(Config.audio.sfx[key]);
           sfx.volume = 0.5;
-          sfx.play().catch(e => {}); 
-        }
+          sfx.play().catch((e) => {});
+        },
       };
 
       const CommandBank = {
@@ -1274,7 +1281,12 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
           });
         },
         spawnEnemyRing: () => {
-          let count = State.game.killCount > 5 ? 3 : 1;
+          // ESCALATION FIX: Increased spawns at kill milestone
+          let count = 1;
+          if (State.game.killCount >= 20) count = 4;
+          else if (State.game.killCount >= 12) count = 3;
+          else if (State.game.killCount > 5) count = 2;
+
           for (let k = 0; k < count; k++) {
             for (let i = 0; i < 50; i++) {
               const angle = Math.random() * Math.PI * 2;
@@ -1324,33 +1336,39 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
       const TerminalSystem = {
         init: () => {
           TerminalSystem.updateHotbar();
-          
-          // These lines go to the Green Terminal Box (Internal)
           TerminalSystem.print("SYSTEM: NULL SECTOR", "#fff");
           TerminalSystem.print("Type /help for commands.", "#888");
 
-          // --- SYSTEM LOG UPDATES (Top-Left HUD) ---
-          // These appear in the game world log, NOT the terminal box.
-          setTimeout(() => TerminalSystem.log('Use "WASD" Keys for movement'), 500);
-          setTimeout(() => TerminalSystem.log('Press "Tab" key to open Terminal'), 1500);
-          setTimeout(() => TerminalSystem.log('Press "Q" to view Objective'), 2500);
+          setTimeout(
+            () => TerminalSystem.log('Use "WASD" Keys for movement'),
+            500
+          );
+          setTimeout(
+            () => TerminalSystem.log('Press "Tab" key to open Terminal'),
+            1500
+          );
+          setTimeout(
+            () => TerminalSystem.log('Press "Q" to view Objective'),
+            2500
+          );
         },
         toggle: () => {
           State.player.isTerminalOpen = !State.player.isTerminalOpen;
           document.getElementById("terminal-wrapper").classList.toggle("open");
           if (State.player.isTerminalOpen) {
-              AudioSystem.playSFX('term_open');
-              setTimeout(() => document.getElementById("term-input").focus(), 50);
-              ObjectiveSystem.collapse();
+            AudioSystem.playSFX("term_open");
+            setTimeout(() => document.getElementById("term-input").focus(), 50);
+            ObjectiveSystem.collapse();
           } else {
-              AudioSystem.playSFX('term_close');
-              document.getElementById("term-input").blur();
+            AudioSystem.playSFX("term_close");
+            document.getElementById("term-input").blur();
           }
         },
         updateHotbar: () => {
-          for (let i = 1; i <= 5; i++) document.getElementById(`slot-${i}`).innerText = State.hotbar[i] || "";
+          for (let i = 1; i <= 5; i++)
+            document.getElementById(`slot-${i}`).innerText =
+              State.hotbar[i] || "";
         },
-        // Prints to the Green Box
         print: (msg, color, type = "msg") => {
           const d = document.createElement("div");
           d.className = `term-${type}`;
@@ -1360,9 +1378,8 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
           const out = document.getElementById("term-output");
           out.scrollTop = out.scrollHeight;
         },
-        // Prints to the Top-Left HUD System Log
         log: (msg, type = "new") => {
-          AudioSystem.playSFX('log');
+          AudioSystem.playSFX("log");
           const l = document.getElementById("system-log");
           const d = document.createElement("div");
           d.className = `log-entry ${type}`;
@@ -1379,12 +1396,22 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
           if (cmdKey === "/help") {
             TerminalSystem.print("--- SYSTEM COMMANDS ---", "#fff");
             for (const [key, val] of Object.entries(CommandBank)) {
-              if (!val.req || (val.req === "combat" && State.player.combatUnlocked) || (val.req === "light_2" && State.player.lightLevel > 1.3)) {
-                TerminalSystem.print(`${key} [${val.desc}] - ${val.cost} MB`, "#ccc");
+              if (
+                !val.req ||
+                (val.req === "combat" && State.player.combatUnlocked) ||
+                (val.req === "light_2" && State.player.lightLevel > 1.3)
+              ) {
+                TerminalSystem.print(
+                  `${key} [${val.desc}] - ${val.cost} MB`,
+                  "#ccc"
+                );
               }
             }
             TerminalSystem.print("--- UTILITY ---", "#fff");
-            TerminalSystem.print("/bind [key] [cmd] (Assign to Hotbar)", "#888");
+            TerminalSystem.print(
+              "/bind [key] [cmd] (Assign to Hotbar)",
+              "#888"
+            );
             TerminalSystem.print("/cls (Clear Screen)", "#888");
             return;
           }
@@ -1400,42 +1427,113 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
               if (CommandBank[commandToBind]) {
                 State.hotbar[key] = commandToBind;
                 TerminalSystem.updateHotbar();
-                TerminalSystem.print(`SUCCESS: Bound ${commandToBind} to [${key}]`, "#00ffaa");
-              } else { TerminalSystem.print(`ERR: Command '${commandToBind}' not found`, "#ff3333"); }
-            } else TerminalSystem.print("ERR: Invalid Key (Use 1-5)", "#ff3333");
+                TerminalSystem.print(
+                  `SUCCESS: Bound ${commandToBind} to [${key}]`,
+                  "#00ffaa"
+                );
+              } else {
+                TerminalSystem.print(
+                  `ERR: Command '${commandToBind}' not found`,
+                  "#ff3333"
+                );
+              }
+            } else
+              TerminalSystem.print("ERR: Invalid Key (Use 1-5)", "#ff3333");
             return;
           }
 
           const cmdData = CommandBank[cmdKey];
-          if (!cmdData) { TerminalSystem.print(`ERR: UNKNOWN COMMAND '${cmdKey}'`, "#ff3333"); return; }
-          if (cmdData.req === "combat" && !State.player.combatUnlocked) return TerminalSystem.print("ERR: COMBAT MODULE NOT FOUND", "#ff3333");
-          if (cmdData.req === "light_2" && State.player.lightLevel < 1.3) return TerminalSystem.print("ERR: LIGHT LEVEL TOO LOW", "#ff3333");
-          if (State.player.data < cmdData.cost) return TerminalSystem.print(`ERR: NEED ${cmdData.cost} MB DATA`, "#ff3333");
-          
+          if (!cmdData) {
+            TerminalSystem.print(`ERR: UNKNOWN COMMAND '${cmdKey}'`, "#ff3333");
+            return;
+          }
+          if (cmdData.req === "combat" && !State.player.combatUnlocked)
+            return TerminalSystem.print(
+              "ERR: COMBAT MODULE NOT FOUND",
+              "#ff3333"
+            );
+          if (cmdData.req === "light_2" && State.player.lightLevel < 1.3)
+            return TerminalSystem.print("ERR: LIGHT LEVEL TOO LOW", "#ff3333");
+          if (State.player.data < cmdData.cost)
+            return TerminalSystem.print(
+              `ERR: NEED ${cmdData.cost} MB DATA`,
+              "#ff3333"
+            );
+
           if (cmdData.limit) {
-            if (cmdKey === "sys.speed" && State.player.stats.speedLevel >= cmdData.limit) return TerminalSystem.print("ERR: MAX SPEED REACHED", "#ff3333");
-            if (cmdKey === "sys.fire" && State.player.stats.fireRateLevel >= cmdData.limit) return TerminalSystem.print("ERR: MAX FIRE RATE REACHED", "#ff3333");
-            if (cmdKey === "sys.protect" && State.player.shield > 0) return TerminalSystem.print("ERR: SHIELD ALREADY ACTIVE", "#ff3333");
+            if (
+              cmdKey === "sys.speed" &&
+              State.player.stats.speedLevel >= cmdData.limit
+            )
+              return TerminalSystem.print("ERR: MAX SPEED REACHED", "#ff3333");
+            if (
+              cmdKey === "sys.fire" &&
+              State.player.stats.fireRateLevel >= cmdData.limit
+            )
+              return TerminalSystem.print(
+                "ERR: MAX FIRE RATE REACHED",
+                "#ff3333"
+              );
+            if (cmdKey === "sys.protect" && State.player.shield > 0)
+              return TerminalSystem.print(
+                "ERR: SHIELD ALREADY ACTIVE",
+                "#ff3333"
+              );
           }
 
           State.player.data -= cmdData.cost;
           TerminalSystem.print(`EXEC: ${cmdKey}... OK`, "#00ffaa");
-          AudioSystem.playSFX('term_success');
+          AudioSystem.playSFX("term_success");
 
           switch (cmdData.action) {
-            case "scan": State.player.scanActive = true; State.player.scanTimer = 600; TerminalSystem.log("SCAN COMPLETE"); break;
-            case "light": 
-                if (State.player.lightLevel < Config.maxLightLevel) { State.player.lightLevel += 0.2; TerminalSystem.log("LIGHT UPGRADED"); }
-                else TerminalSystem.print("ERR: MAX LIGHT", "#f33"); break;
+            case "scan":
+              State.player.scanActive = true;
+              State.player.scanTimer = 600;
+              TerminalSystem.log("SCAN COMPLETE");
+              break;
+            case "light":
+              if (State.player.lightLevel < Config.maxLightLevel) {
+                State.player.lightLevel += 0.2;
+                TerminalSystem.log("LIGHT UPGRADED");
+              } else TerminalSystem.print("ERR: MAX LIGHT", "#f33");
+              break;
             case "combat":
-                if (!State.player.combatUnlocked) { State.player.combatUnlocked = true; TerminalSystem.log("COMBAT UNLOCKED"); setTimeout(GameLogic.triggerCombatEvent, 1000); }
-                else TerminalSystem.print("ERR: ALREADY ACTIVE", "#f33"); break;
-            case "cloak": State.player.cloaked = true; State.player.cloakTimer = 300; TerminalSystem.log("CLOAK ENGAGED"); break;
-            case "heal": State.player.health = Math.min(100, State.player.health + 50); TerminalSystem.log("HULL REPAIRED"); break;
-            case "speed": State.player.stats.speedLevel++; Config.player.maxSpeed += 1; Config.player.accel += 0.05; TerminalSystem.log("VELOCITY INCREASED"); break;
-            case "firerate": State.player.stats.fireRateLevel++; TerminalSystem.log("WEAPON OVERCLOCKED"); break;
-            case "shield": State.player.shield = 50; TerminalSystem.log("SHIELD GENERATED"); break;
-            case "unbind": if (args[0] && State.hotbar[args[0]]) { State.hotbar[args[0]] = null; TerminalSystem.updateHotbar(); TerminalSystem.print(`UNBOUND KEY [${args[0]}]`, "#0ff"); } break;
+              if (!State.player.combatUnlocked) {
+                State.player.combatUnlocked = true;
+                TerminalSystem.log("COMBAT UNLOCKED");
+                setTimeout(GameLogic.triggerCombatEvent, 1000);
+              } else TerminalSystem.print("ERR: ALREADY ACTIVE", "#f33");
+              break;
+            case "cloak":
+              State.player.cloaked = true;
+              State.player.cloakTimer = 300;
+              TerminalSystem.log("CLOAK ENGAGED");
+              break;
+            case "heal":
+              State.player.health = Math.min(100, State.player.health + 50);
+              TerminalSystem.log("HULL REPAIRED");
+              break;
+            case "speed":
+              State.player.stats.speedLevel++;
+              Config.player.maxSpeed += 1;
+              Config.player.accel += 0.05;
+              TerminalSystem.log("VELOCITY INCREASED");
+              break;
+            case "firerate":
+              State.player.stats.fireRateLevel++;
+              TerminalSystem.log("WEAPON OVERCLOCKED");
+              break;
+            case "shield":
+              State.player.shield = 50;
+              TerminalSystem.log("SHIELD GENERATED");
+              break;
+            case "unbind":
+              if (args[0] && State.hotbar[args[0]]) {
+                State.hotbar[args[0]] = null;
+                TerminalSystem.updateHotbar();
+                TerminalSystem.print(`UNBOUND KEY [${args[0]}]`, "#0ff");
+              }
+              break;
           }
         },
       };
@@ -1447,7 +1545,6 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
             canvas.height = window.innerHeight;
           });
           window.addEventListener("keydown", (e) => {
-            // Audio unlock on first interaction
             AudioSystem.init();
 
             if (e.key === "Escape") {
@@ -1461,13 +1558,11 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
             )
               return;
 
-            // Objective Toggle - Q
             if (e.key.toLowerCase() === "q") {
               ObjectiveSystem.toggle();
               return;
             }
 
-            // Movement Auto-Collapse
             if (
               ["w", "a", "s", "d"].includes(e.key.toLowerCase()) &&
               ObjectiveSystem.expanded
@@ -1508,7 +1603,7 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
               State.input.keys[e.key] = false;
           });
           window.addEventListener("mousedown", (e) => {
-            AudioSystem.init(); // Init Audio on click too
+            AudioSystem.init();
             if (
               State.player.mode === "combat" &&
               !State.player.isDead &&
@@ -1522,8 +1617,6 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
 
       const GameLogic = {
         init: async () => {
-          // AudioSystem init happens on user interaction (InputSystem), not here
-
           const savedData = localStorage.getItem("0110_save");
           if (savedData && !localStorage.getItem("0110_save_v2")) {
             const parsed = JSON.parse(savedData);
@@ -1535,7 +1628,6 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
           GameLogic.checkChunks();
           ObjectiveSystem.init();
 
-          // CINEMATIC SEQUENCE
           await Utils.wait(500);
           AudioSystem.playSFX("intro_hit");
           document.getElementById("intro-title").style.opacity = 1;
@@ -1546,10 +1638,9 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
           await Utils.wait(1000);
           document.getElementById("cinematic-overlay").style.opacity = 0;
 
-          // Story Overlay
           AudioSystem.playSFX("story_ambience");
           document.getElementById("story-overlay").style.opacity = 1;
-          await Utils.wait(20000); // Read time
+          await Utils.wait(20000);
           document.getElementById("story-overlay").style.opacity = 0;
           await Utils.wait(1000);
 
@@ -1629,7 +1720,6 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
           const timeScale = State.player.isTerminalOpen ? 0.1 : 1.0;
           let speedMod = State.player.mode === "combat" ? 0.7 : 1.0;
 
-          // Physics
           if (State.input.keys.w)
             State.player.vy -= Config.player.accel * timeScale * speedMod;
           if (State.input.keys.s)
@@ -1663,11 +1753,23 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
           GameLogic.checkChunks();
           ObjectiveSystem.update();
 
+          // ESCALATION FIX: Triggering spawns dynamically based on Kill Count
+          let spawnChance = 0.01;
+          let maxEnemies = 5 + State.game.killCount / 3;
+
+          if (State.game.killCount >= 20) {
+            spawnChance = 0.08;
+            maxEnemies = 30;
+          } else if (State.game.killCount >= 15) {
+            spawnChance = 0.03;
+            maxEnemies = 15;
+          }
+
           if (
             State.player.combatUnlocked &&
-            State.world.enemies.length < 5 + State.game.killCount / 3
+            State.world.enemies.length < maxEnemies
           ) {
-            if (Math.random() < 0.01) SpawnSystem.spawnEnemyRing();
+            if (Math.random() < spawnChance) SpawnSystem.spawnEnemyRing();
           }
 
           if (
@@ -1729,35 +1831,41 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
           State.world.enemies.forEach((en, index) => {
             let sepX = 0,
               sepY = 0;
-            // STRONG SEPARATION LOGIC
             State.world.enemies.forEach((other, otherIdx) => {
               if (index !== otherIdx) {
                 let d = Utils.dist(en.x, en.y, other.x, other.y);
                 if (d < 60) {
-                  // Increased separation radius
                   sepX += (en.x - other.x) * 1.5;
                   sepY += (en.y - other.y) * 1.5;
                 }
               }
             });
+
             if (en.cooldown > 0) en.cooldown -= dt;
+
             let dist = Utils.dist(en.x, en.y, State.player.x, State.player.y);
             let hit = Utils.rayCast(en.x, en.y, State.player.x, State.player.y);
 
-            // WANDER LOGIC
-            if (dist > 700 || hit.hit) {
-              // If far away or blocked, pick a random point nearby to move to
+            // AI LOGIC FIX: Tracking vs Wandering
+            let isOmniscient =
+              State.game.killCount >= 15 && !State.player.cloaked;
+            let canSee =
+              dist < en.sightRange && !hit.hit && !State.player.cloaked;
+
+            if (isOmniscient) {
+              // Relentless Tracking enabled at 15 kills
+              en.targetX = State.player.x;
+              en.targetY = State.player.y;
+            } else if (dist > 700 || hit.hit) {
+              // Wander around obstacles if far or blocked
               if (en.wanderTimer <= 0) {
                 en.targetX = en.x + (Math.random() - 0.5) * 400;
                 en.targetY = en.y + (Math.random() - 0.5) * 400;
                 en.wanderTimer = 100 + Math.random() * 100;
               }
               en.wanderTimer -= dt;
-            } else if (
-              State.game.killCount > 10 ||
-              (dist < en.sightRange && !hit.hit && !State.player.cloaked)
-            ) {
-              // Chase
+            } else if (canSee) {
+              // Normal Line of Sight Tracking
               en.targetX = State.player.x;
               en.targetY = State.player.y;
             }
@@ -1770,37 +1878,30 @@ Read the full story on <a href="story.html" target="_blank" style="color: var(--
               let nextX = en.x + (dx / moveDist) * en.speed * dt + sepX * 0.1;
               let nextY = en.y + (dy / moveDist) * en.speed * dt + sepY * 0.1;
               let blocked = false;
-              for (let s of State.world.structures)
-                if (Utils.checkRectCollide(nextX, nextY, s)) blocked = true;
+
+              for (let s of State.world.structures) {
+                if (Utils.checkRectCollide(nextX, nextY, s)) {
+                  blocked = true;
+                  break;
+                }
+              }
+
               if (!blocked) {
                 en.x = nextX;
                 en.y = nextY;
                 en.angle = Math.atan2(dy, dx);
               } else {
-                if (
-                  !Utils.checkRectCollide(
-                    nextX,
-                    en.y,
-                    State.world.structures[0]
-                  )
-                )
-                  en.x = nextX;
-                else if (
-                  !Utils.checkRectCollide(
-                    en.x,
-                    nextY,
-                    State.world.structures[0]
-                  )
-                )
-                  en.y = nextY;
-                else {
-                  en.targetX = en.x + (Math.random() - 0.5) * 200;
-                  en.targetY = en.y + (Math.random() - 0.5) * 200;
-                }
+                // BUG FIX: Prevent freezing when hitting walls by forcing a new target path instantly
+                en.targetX = en.x + (Math.random() - 0.5) * 300;
+                en.targetY = en.y + (Math.random() - 0.5) * 300;
+                en.wanderTimer = 50;
               }
+            } else {
+              // Prevent freezing when reaching wander destination
+              if (!isOmniscient && !canSee) en.wanderTimer = 0;
             }
 
-            if (dist < en.sightRange && !hit.hit && !State.player.cloaked) {
+            if (canSee) {
               en.angle = Math.atan2(
                 State.player.y - en.y,
                 State.player.x - en.x
