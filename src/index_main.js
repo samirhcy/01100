@@ -5,7 +5,7 @@ const Config = {
     gridSize: 60,
     baseLightRadius: 300,
     colors: {
-      grid: "#151515",
+      grid: "#555",
       fragment: "#00f3ff",
       beacon: "#ffffff",
       portal: "#bd00ff",
@@ -188,13 +188,17 @@ const Terminal = {
       
       await Utils.wait(1000);
       Terminal.print("TUTORIAL COMPLETE. SYSTEM READY.", "#fff");
-      Terminal.print("Press 'Tab' to open/close Terminal.", "#fff");
       Terminal.print("COMMANDS AVAILABLE:", "#00f3ff");
       Terminal.print("  sys.lumos  - Enhance Light (50 MB)", "#ccc");
       Terminal.print("  sys.scan   - Highlight Loot (50 MB)", "#ccc");
       Terminal.print("  /bind [k] [cmd] - Assign Keys", "#ccc");
       Terminal.print("n: TRY ABOVE COMMANDS BEFORE ENTERING THE RIFT.", "#ccc");
       Terminal.print("OBJECTIVE: ENTER THE RIFT TO ESCAPE.", "#bd00ff");
+      
+      // FIX: Auto-close terminal so player regains movement speed
+      if (State.player.isTerminalOpen) {
+          Terminal.toggle();
+      }
       
       State.phase = "active";
       Game.spawnPortal();
@@ -323,20 +327,25 @@ const Game = {
       if (State.phase === "active" && State.world.portal.active) {
         const dx = State.player.x - State.world.portal.x;
         const dy = State.player.y - State.world.portal.y;
+        
         if (Math.sqrt(dx * dx + dy * dy) < 60) {
           State.phase = "end";
           Terminal.print(">> UPLOADING CONSCIOUSNESS...", "#bd00ff");
           
-          const saveData = {
-            data: State.player.data,
-            lightLevel: State.player.lightLevel,
+          // --- FIXED SAVE LOGIC (Unlock Only) ---
+          const unlockData = {
+            chapter: 1,
+            unlocked: true
           };
-          localStorage.setItem("0110_save", JSON.stringify(saveData));
+          
+          // Save to V2 slot
+          localStorage.setItem("0110_save_v2", JSON.stringify(unlockData));
           
           const fade = document.getElementById("fade-layer");
           if(fade) fade.style.opacity = 1;
           
-          setTimeout(() => { window.location.href = "game.html"; }, 3000);
+          // Redirect to Home Page
+          setTimeout(() => { window.location.href = "index.html"; }, 3000);
         }
       }
 

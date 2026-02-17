@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>0110-The Institute (Chapter 0)</title>
+    
+    <link rel="icon" type="image/png" href="assets/logo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* --- UNIFIED DESIGN SYSTEM (MATCHING CHAPTER 2) --- */
+      :root {
+        --primary: #00f3ff;
+        --secondary: #bd00ff; /* Portal Color */
+        --combat: #ff3333;
+        --terminal-text: #00ff00;
+        --terminal-border: #00ff00;
+        --passive: #888888;
+        --bg-glass: rgba(5, 10, 15, 0.95);
+        --margin: 30px;
+        --obj-bg: rgba(0, 20, 20, 0.9);
+        --obj-border: #004444;
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #000000;
+        /* UPDATED FONT FAMILY */
+        font-family: "Inconsolata", "Courier New", monospace;
+        color: white;
+        user-select: none;
+      }
+
+      canvas { display: block; }
+      .hud-element { cursor: default; }
+      .clickable { cursor: pointer; }
+
+      /* --- CINEMATICS --- */
+      #cinematic-overlay, #story-overlay, #fade-overlay, #overlay-screen {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        pointer-events: none; z-index: 9999;
+      }
+      #cinematic-overlay { background: black; transition: opacity 2s; }
+      
+      #story-overlay { 
+        background: black; 
+        opacity: 0; 
+        transition: opacity 2s; 
+        z-index: 9998;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+
+      #fade-layer { 
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+        background: white; pointer-events: none; z-index: 20000; 
+        opacity: 0; transition: opacity 3s; 
+      }
+
+      /* TEXT STYLES */
+      .title-text { 
+        font-size: 80px; font-weight: bold; letter-spacing: 15px; 
+        text-shadow: 0 0 30px white; text-align: center; 
+        opacity: 0; transition: opacity 2s ease-in-out; 
+      }
+      .subtitle-text { 
+        font-size: 24px; letter-spacing: 8px; color: var(--primary); 
+        margin-top: 20px; text-align: center; 
+        opacity: 0; transition: opacity 2s ease-in-out; 
+      }
+      .dev-text {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        font-size: 20px; letter-spacing: 4px; color: #888; 
+        opacity: 0; transition: opacity 1s;
+      }
+
+      /* RESPONSIVE STORY TEXT */
+      #story-content { 
+        width: 100%;
+        max-width: 600px; 
+        text-align: center; 
+        color: #ddd; 
+      }
+      @media (max-width: 600px) {
+        #story-content { max-width: 90%; }
+        #story-content h2 { font-size: 24px; }
+        #story-content p { font-size: 14px; }
+      }
+
+      #story-content h2 { font-size: 32px; color: var(--primary); margin-bottom: 20px; letter-spacing: 5px; }
+      #story-content p { font-size: 16px; line-height: 1.6; letter-spacing: 1px; }
+
+      /* GLITCH FX */
+      #glitch-layer {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: repeating-linear-gradient(0deg, transparent, transparent 2px, #00f3ff 2px, #00f3ff 4px);
+        opacity: 0; pointer-events: none; mix-blend-mode: overlay; z-index: 10000;
+      }
+      .glitch-active { animation: noise 0.2s infinite; opacity: 0.3 !important; }
+      @keyframes noise {
+        0% { transform: translate(0, 0); }
+        20% { transform: translate(-5px, 5px); }
+        40% { transform: translate(5px, -5px); }
+        100% { transform: translate(0, 0); }
+      }
+
+      /* --- PAUSE OVERLAY --- */
+      #pause-overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex; justify-content: center; align-items: center;
+        z-index: 900; pointer-events: none; opacity: 0; transition: opacity 0.2s;
+        backdrop-filter: blur(2px);
+      }
+      #pause-overlay.visible { opacity: 1; pointer-events: auto; }
+      #pause-text { font-size: 40px; color: #fff; letter-spacing: 10px; text-shadow: 0 0 20px #fff; }
+
+      /* --- UI LAYOUT & RESPONSIVENESS --- */
+      #ui-layer {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none;
+        transform-origin: top center;
+      }
+
+      /* Laptop/Small Screen Optimization */
+      @media (max-width: 1366px), (max-height: 800px) {
+        #ui-layer {
+          transform: scale(0.85);
+          width: 117.6%;
+          height: 117.6%;
+          left: -8.8%;
+          top: -8.8%;
+          --margin: 20px;
+        }
+      }
+
+      .locked { opacity: 0; visibility: hidden; transition: opacity 2s; }
+      .unlocked { opacity: 1; visibility: visible; }
+
+      /* TOP LEFT */
+      #hud-top-left {
+        position: absolute; top: var(--margin); left: var(--margin);
+        width: 350px; pointer-events: auto; text-shadow: 0 1px 2px black;
+      }
+      .log-entry {
+        font-size: 13px; margin-bottom: 4px; opacity: 0.6; transition: opacity 0.5s;
+        color: var(--primary); text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+      }
+      #coords-display { margin-top: 10px; font-size: 12px; color: #888; letter-spacing: 1px; }
+
+      /* TOP RIGHT */
+      #hud-top-right {
+        position: absolute; top: var(--margin); right: var(--margin);
+        display: flex; flex-direction: column; align-items: flex-end;
+        pointer-events: auto; z-index: 1000;
+      }
+      #menu-icon {
+        font-size: 24px; color: var(--primary); padding: 5px; cursor: pointer;
+        background: rgba(0, 0, 0, 0.5); transition: 0.2s; border: 1px solid transparent;
+      }
+      #menu-icon:hover { border-color: var(--primary); }
+      #menu-dropdown {
+        display: none; margin-top: 10px; background: var(--bg-glass);
+        border: 1px solid var(--primary); min-width: 140px;
+      }
+      #menu-dropdown.show { display: block; }
+      .menu-item {
+        padding: 10px; font-size: 12px; color: #ccc; cursor: pointer;
+        border-bottom: 1px solid #333; transition: 0.2s;
+      }
+      .menu-item:hover { background: rgba(0, 243, 255, 0.1); color: white; }
+
+      /* BOTTOM LEFT */
+      #hud-bottom-left {
+        position: absolute; bottom: var(--margin); left: var(--margin);
+        display: flex; flex-direction: column; gap: 8px; pointer-events: auto;
+      }
+      #data-bank {
+        font-size: 14px; color: var(--primary); font-weight: bold;
+        background: rgba(0, 0, 0, 0.5); padding: 5px 10px;
+        border-left: 3px solid var(--primary); transition: 0.3s;
+      }
+      #minimap-container {
+        width: 140px; height: 140px; border-radius: 50%; border: 2px solid #333;
+        background: #000; overflow: hidden; position: relative;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+      }
+      #minimap-canvas { width: 100%; height: 100%; opacity: 0.9; }
+      #minimap-border {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        border-radius: 50%; border: 1px solid var(--primary);
+        box-shadow: inset 0 0 10px var(--primary); pointer-events: none;
+      }
+
+      /* BOTTOM CENTER */
+      #hud-bottom-center {
+        position: absolute; bottom: var(--margin); left: 50%; transform: translateX(-50%);
+        display: flex; flex-direction: column; align-items: center;
+        width: 500px; pointer-events: auto;
+      }
+      .stats-row { display: flex; gap: 15px; width: 100%; margin-bottom: 12px; }
+      .bar-wrapper { flex: 1; }
+      .bar-container { height: 6px; background: #111; border: 1px solid #444; position: relative; }
+      #bar-health { background: var(--passive); height: 100%; width: 100%; transition: width 0.2s; }
+      #bar-light { background: #ccc; height: 100%; width: 100%; box-shadow: 0 0 5px #ccc; }
+      .bar-label { font-size: 10px; margin-bottom: 4px; display: block; color: #aaa; }
+      #hotbar { display: flex; gap: 5px; width: 100%; transition: opacity 0.3s; }
+      .slot {
+        flex: 1; height: 45px; background: rgba(20, 20, 20, 0.6);
+        border: 1px solid #444; display: flex; justify-content: center;
+        align-items: center; color: #666; font-size: 10px; position: relative;
+      }
+
+      /* BOTTOM RIGHT (TERMINAL) */
+      #hud-bottom-right {
+        position: absolute; bottom: var(--margin); right: var(--margin);
+        display: flex; flex-direction: column; align-items: flex-end;
+        pointer-events: auto; z-index: 100;
+      }
+      #tablet-icon {
+        width: 50px; height: 50px; background: var(--bg-glass);
+        border: 1px solid var(--primary); border-radius: 4px;
+        display: flex; justify-content: center; align-items: center;
+        cursor: pointer; color: var(--primary); font-size: 20px;
+        z-index: 101; transition: 0.3s;
+      }
+      #tablet-icon:hover {
+        text-shadow: 0 0 10px var(--primary);
+        box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+      }
+
+      /* TERMINAL ANIMATION */
+      #terminal-wrapper {
+        position: absolute; bottom: 60px; right: 0;
+        
+        width: 0; height: 0; opacity: 0; /* Collapsed */
+        
+        background: rgba(5, 15, 5, 0.98);
+        border: 1px solid var(--terminal-border);
+        border-radius: 6px;
+        display: flex; flex-direction: column;
+        
+        transform-origin: bottom right;
+        overflow: hidden;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+
+        transition: 
+            opacity 0.1s linear 0.6s,
+            height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s,
+            width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
+      }
+
+      #terminal-wrapper.open {
+        width: clamp(300px, 30vw, 500px);
+        height: clamp(300px, 40vh, 600px);
+        opacity: 1;
+
+        transition: 
+            opacity 0.1s linear 0s,
+            width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s,
+            height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
+      }
+
+      .term-header {
+        background: #000; padding: 8px 12px; font-size: 11px;
+        color: var(--terminal-text); display: flex; justify-content: space-between;
+        border-bottom: 1px solid #222; letter-spacing: 1px;
+      }
+      #term-output {
+        flex-grow: 1; padding: 15px; overflow-y: auto;
+        font-family: "Inconsolata", "Consolas", monospace; font-size: 12px;
+        color: var(--terminal-text); line-height: 1.5; scrollbar-width: none;
+      }
+      #term-output::-webkit-scrollbar { display: none; }
+      #term-input-line {
+        display: flex; padding: 12px; background: #000; border-top: 1px solid #222;
+      }
+      #term-input {
+        background: transparent; border: none; color: var(--terminal-text);
+        font-family: "Inconsolata", "Consolas", monospace; font-size: 13px; flex-grow: 1; outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="fade-layer"></div>
+    <div id="glitch-layer"></div>
+    
+    <div id="cinematic-overlay">
+      <div id="intro-title" class="title-text">0110</div>
+      <div id="intro-sub" class="subtitle-text">THE INSTITUTE</div>
+      <div id="intro-dev" class="dev-text" style="font-size: 18px;">A Samir C Production</div>
+    </div>
+
+    <div id="story-overlay">
+      <div id="story-content">
+        <h2>0. The Invitation</h2>
+        <p>
+          Will received a mysterious email inviting him to a virtual world called <b>The Metaphor</b>. He ignored it until one line caught his attention, <i>his friend Andrew was waiting there.</i><br><br>
+
+          When Andrew suddenly went missing, Will searched his house and found the same emails. Andrew had tried to escape, but failed.<br><br>
+
+          Will replied, demanding answers. A link and a voice note appeared. It was Andrew, inviting him in, but something felt wrong.<br><br>
+
+          Will refused, but his screen turned on by itself. A strange video began to play, and his body went numb.<br><br>
+
+          He was pulled in.<br><br>
+
+          Into the void.<br><br>
+
+          Read the full story on <a href="story.html" style="color: var(--primary); text-decoration: underline">0110-game-docs</a>. Thanks for playing the demo.
+
+        </p>
+        <p style="color: var(--primary); text-align: center; margin-top: 20px;">Tips: Use 'WASD' to move around.</p>
+        <p style="font-size: 14px; color: #888; text-align: center;">Version 1.01</p>
+      </div>
+    </div>
+
+    <div id="pause-overlay">
+      <div id="pause-text">PAUSED</div>
+    </div>
+
+    <div id="ui-layer">
+      <div id="hud-top-left" class="hud-element locked">
+        <div id="system-log">
+          <div class="log-entry">> PROTOCOL INITIATED</div>
+        </div>
+        <div id="coords-display">LOC: [0, 0]</div>
+      </div>
+
+      <div id="hud-top-right" class="hud-element locked">
+        <div id="menu-icon" class="clickable" onclick="UI.toggleMenu()">☰</div>
+        <div id="menu-dropdown">
+          <div class="menu-item clickable" onclick="UI.log('SAVING DISABLED (TUTORIAL)')">SAVE</div>
+          <div class="menu-item clickable" onclick="UI.log('SETTINGS')">SETTINGS</div>
+          <div class="menu-item clickable" onclick="location.reload()">REBOOT</div>
+        </div>
+      </div>
+
+      <div id="hud-bottom-left" class="hud-element locked">
+        <div id="data-bank">DATA: 0 MB</div>
+        <div id="minimap-container">
+          <canvas id="minimap-canvas" width="140" height="140"></canvas>
+          <div id="minimap-border"></div>
+        </div>
+      </div>
+
+      <div id="hud-bottom-center" class="hud-element locked">
+        <div class="stats-row">
+          <div class="bar-wrapper">
+            <span class="bar-label">INTEGRITY</span>
+            <div class="bar-container"><div id="bar-health"></div></div>
+          </div>
+          <div class="bar-wrapper">
+            <span class="bar-label">LIGHT</span>
+            <div class="bar-container"><div id="bar-light"></div></div>
+          </div>
+        </div>
+        <div id="hotbar">
+          <div class="slot" id="slot-1">1</div>
+          <div class="slot" id="slot-2">2</div>
+          <div class="slot" id="slot-3">3</div>
+          <div class="slot" id="slot-4">4</div>
+          <div class="slot" id="slot-5">5</div>
+        </div>
+      </div>
+
+      <div id="hud-bottom-right" class="hud-element locked">
+        <div id="terminal-wrapper">
+          <div class="term-header">
+            <span>CONNECTION: SECURE</span>
+            <span>USER: WilliamHayes</span>
+          </div>
+          <div id="term-output"></div>
+          <div id="term-input-line">
+            <span style="color: var(--terminal-text); margin-right: 10px">></span>
+            <input type="text" id="term-input" autocomplete="off" />
+          </div>
+        </div>
+        <div id="tablet-icon" class="clickable" onclick="Terminal.toggle()">&lt;/&gt;</div>
+      </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script type="module" src="src/index_main.js"></script>
+  </body>
+</html>

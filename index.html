@@ -3,351 +3,535 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>0110-The Institute (Chapter 0)</title>
+    <title>0110 - HOME</title>
+    
+    <link rel="icon" type="image/png" href="assets/logo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
     <style>
-      /* --- UNIFIED DESIGN SYSTEM (MATCHING CHAPTER 2) --- */
       :root {
         --primary: #00f3ff;
-        --secondary: #bd00ff; /* Portal Color */
-        --combat: #ff3333;
-        --terminal-text: #00ff00;
-        --terminal-border: #00ff00;
-        --passive: #888888;
-        --bg-glass: rgba(5, 10, 15, 0.95);
-        --margin: 30px;
-        --obj-bg: rgba(0, 20, 20, 0.9);
-        --obj-border: #004444;
+        --secondary: #bd00ff;
+        --dark: #050505;
+        --grid-color: #333; 
+        --text-glow: 0 0 10px var(--primary);
+        --box-bg: rgba(0, 20, 20, 0.9);
       }
+
+      * { box-sizing: border-box; }
 
       body {
         margin: 0;
-        overflow: hidden;
-        background-color: #000000;
-        font-family: "Courier New", Courier, monospace;
+        height: 100vh;
+        width: 100vw;
+        background: #000;
+        font-family: "Inconsolata", monospace;
         color: white;
-        user-select: none;
-      }
-
-      canvas { display: block; }
-      .hud-element { cursor: default; }
-      .clickable { cursor: pointer; }
-
-      /* --- CINEMATICS --- */
-      #cinematic-overlay, #story-overlay, #fade-overlay, #overlay-screen {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
-        pointer-events: none; z-index: 9999;
-      }
-      #cinematic-overlay { background: black; transition: opacity 2s; }
-      #story-overlay { background: black; opacity: 0; transition: opacity 2s; z-index: 9998; }
-      #fade-layer { 
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-        background: white; pointer-events: none; z-index: 20000; 
-        opacity: 0; transition: opacity 3s; 
-      }
-
-      /* TEXT STYLES */
-      .title-text { 
-        font-size: 80px; font-weight: bold; letter-spacing: 15px; 
-        text-shadow: 0 0 30px white; text-align: center; 
-        opacity: 0; transition: opacity 2s ease-in-out; 
-      }
-      .subtitle-text { 
-        font-size: 24px; letter-spacing: 8px; color: var(--primary); 
-        margin-top: 20px; text-align: center; 
-        opacity: 0; transition: opacity 2s ease-in-out; 
-      }
-      .dev-text {
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        font-size: 20px; letter-spacing: 4px; color: #888; 
-        opacity: 0; transition: opacity 1s;
-      }
-
-      #story-content { max-width: 600px; text-align: center; color: #ddd; }
-      #story-content h2 { font-size: 32px; color: var(--primary); margin-bottom: 20px; letter-spacing: 5px; }
-      #story-content p { font-size: 16px; line-height: 1.6; letter-spacing: 1px; }
-
-      /* GLITCH FX */
-      #glitch-layer {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: repeating-linear-gradient(0deg, transparent, transparent 2px, #00f3ff 2px, #00f3ff 4px);
-        opacity: 0; pointer-events: none; mix-blend-mode: overlay; z-index: 10000;
-      }
-      .glitch-active { animation: noise 0.2s infinite; opacity: 0.3 !important; }
-      @keyframes noise {
-        0% { transform: translate(0, 0); }
-        20% { transform: translate(-5px, 5px); }
-        40% { transform: translate(5px, -5px); }
-        100% { transform: translate(0, 0); }
-      }
-
-      /* --- PAUSE OVERLAY --- */
-      #pause-overlay {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex; justify-content: center; align-items: center;
-        z-index: 900; pointer-events: none; opacity: 0; transition: opacity 0.2s;
-        backdrop-filter: blur(2px);
-      }
-      #pause-overlay.visible { opacity: 1; pointer-events: auto; }
-      #pause-text { font-size: 40px; color: #fff; letter-spacing: 10px; text-shadow: 0 0 20px #fff; }
-
-      /* --- UI LAYOUT --- */
-      #ui-layer {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        pointer-events: none;
-      }
-      .locked { opacity: 0; visibility: hidden; transition: opacity 2s; }
-      .unlocked { opacity: 1; visibility: visible; }
-
-      /* TOP LEFT */
-      #hud-top-left {
-        position: absolute; top: var(--margin); left: var(--margin);
-        width: 350px; pointer-events: auto; text-shadow: 0 1px 2px black;
-      }
-      .log-entry {
-        font-size: 13px; margin-bottom: 4px; opacity: 0.6; transition: opacity 0.5s;
-        color: var(--primary); text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
-      }
-      #coords-display { margin-top: 10px; font-size: 12px; color: #888; letter-spacing: 1px; }
-
-      /* TOP RIGHT */
-      #hud-top-right {
-        position: absolute; top: var(--margin); right: var(--margin);
-        display: flex; flex-direction: column; align-items: flex-end;
-        pointer-events: auto; z-index: 1000;
-      }
-      #menu-icon {
-        font-size: 24px; color: var(--primary); padding: 5px; cursor: pointer;
-        background: rgba(0, 0, 0, 0.5); transition: 0.2s; border: 1px solid transparent;
-      }
-      #menu-icon:hover { border-color: var(--primary); }
-      #menu-dropdown {
-        display: none; margin-top: 10px; background: var(--bg-glass);
-        border: 1px solid var(--primary); min-width: 140px;
-      }
-      #menu-dropdown.show { display: block; }
-      .menu-item {
-        padding: 10px; font-size: 12px; color: #ccc; cursor: pointer;
-        border-bottom: 1px solid #333; transition: 0.2s;
-      }
-      .menu-item:hover { background: rgba(0, 243, 255, 0.1); color: white; }
-
-      /* BOTTOM LEFT */
-      #hud-bottom-left {
-        position: absolute; bottom: var(--margin); left: var(--margin);
-        display: flex; flex-direction: column; gap: 8px; pointer-events: auto;
-      }
-      #data-bank {
-        font-size: 14px; color: var(--primary); font-weight: bold;
-        background: rgba(0, 0, 0, 0.5); padding: 5px 10px;
-        border-left: 3px solid var(--primary); transition: 0.3s;
-      }
-      #minimap-container {
-        width: 140px; height: 140px; border-radius: 50%; border: 2px solid #333;
-        background: #000; overflow: hidden; position: relative;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
-      }
-      #minimap-canvas { width: 100%; height: 100%; opacity: 0.9; }
-      #minimap-border {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        border-radius: 50%; border: 1px solid var(--primary);
-        box-shadow: inset 0 0 10px var(--primary); pointer-events: none;
-      }
-
-      /* BOTTOM CENTER */
-      #hud-bottom-center {
-        position: absolute; bottom: var(--margin); left: 50%; transform: translateX(-50%);
-        display: flex; flex-direction: column; align-items: center;
-        width: 500px; pointer-events: auto;
-      }
-      .stats-row { display: flex; gap: 15px; width: 100%; margin-bottom: 12px; }
-      .bar-wrapper { flex: 1; }
-      .bar-container { height: 6px; background: #111; border: 1px solid #444; position: relative; }
-      #bar-health { background: var(--passive); height: 100%; width: 100%; transition: width 0.2s; }
-      #bar-light { background: #ccc; height: 100%; width: 100%; box-shadow: 0 0 5px #ccc; }
-      .bar-label { font-size: 10px; margin-bottom: 4px; display: block; color: #aaa; }
-      #hotbar { display: flex; gap: 5px; width: 100%; transition: opacity 0.3s; }
-      .slot {
-        flex: 1; height: 45px; background: rgba(20, 20, 20, 0.6);
-        border: 1px solid #444; display: flex; justify-content: center;
-        align-items: center; color: #666; font-size: 10px; position: relative;
-      }
-
-      /* BOTTOM RIGHT (TERMINAL) */
-      #hud-bottom-right {
-        position: absolute; bottom: var(--margin); right: var(--margin);
-        display: flex; flex-direction: column; align-items: flex-end;
-        pointer-events: auto; z-index: 100;
-      }
-      #tablet-icon {
-        width: 50px; height: 50px; background: var(--bg-glass);
-        border: 1px solid var(--primary); border-radius: 4px;
-        display: flex; justify-content: center; align-items: center;
-        cursor: pointer; color: var(--primary); font-size: 20px;
-        z-index: 101; transition: 0.3s;
-      }
-      #tablet-icon:hover {
-        text-shadow: 0 0 10px var(--primary);
-        box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
-      }
-
-      /* TERMINAL ANIMATION (Line Draw Effect) */
-      #terminal-wrapper {
-        position: absolute; bottom: 60px; right: 0;
-        
-        width: 0; height: 0; opacity: 0; /* Collapsed */
-        
-        background: rgba(5, 15, 5, 0.98);
-        border: 1px solid var(--terminal-border);
-        border-radius: 6px;
-        display: flex; flex-direction: column;
-        
-        transform-origin: bottom right;
         overflow: hidden;
-        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-
-        /* Closing Sequence */
-        transition: 
-            opacity 0.1s linear 0.6s,
-            height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s,
-            width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
 
-      #terminal-wrapper.open {
-        /* Open Dimensions */
-        width: clamp(300px, 30vw, 500px);
-        height: clamp(300px, 40vh, 600px);
-        opacity: 1;
-
-        /* Opening Sequence */
-        transition: 
-            opacity 0.1s linear 0s,
-            width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s,
-            height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
+      /* --- SCALING WRAPPER --- */
+      #main-wrapper {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        transform: scale(1.00); 
+        transform-origin: center center;
       }
 
-      .term-header {
-        background: #000; padding: 8px 12px; font-size: 11px;
-        color: var(--terminal-text); display: flex; justify-content: space-between;
-        border-bottom: 1px solid #222; letter-spacing: 1px;
+      /* --- FADE TRANSITIONS --- */
+      #fade-overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: black; z-index: 2000; pointer-events: none;
+        opacity: 1; transition: opacity 1.5s ease-in-out;
       }
-      #term-output {
-        flex-grow: 1; padding: 15px; overflow-y: auto;
-        font-family: "Consolas", monospace; font-size: 12px;
-        color: var(--terminal-text); line-height: 1.5; scrollbar-width: none;
+      body.loaded #fade-overlay { opacity: 0; }
+      body.exiting #fade-overlay { opacity: 1; transition: opacity 2s ease-in-out; }
+
+      /* --- MUSIC TOGGLE --- */
+      #music-toggle {
+          position: absolute; top: 30px; right: 30px; z-index: 100;
+          color: #444; cursor: pointer; font-size: 24px; transition: 0.3s;
       }
-      #term-output::-webkit-scrollbar { display: none; }
-      #term-input-line {
-        display: flex; padding: 12px; background: #000; border-top: 1px solid #222;
+      #music-toggle:hover { color: var(--primary); text-shadow: 0 0 10px var(--primary); }
+      #music-toggle.active { color: var(--primary); }
+
+      /* --- LEFT SECTION (TITLE) --- */
+      #section-left {
+        flex: 1;
+        background: #000;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        padding: 40px;
+        border-right: 1px solid #000;
+        z-index: 5;
       }
-      #term-input {
-        background: transparent; border: none; color: var(--terminal-text);
-        font-family: "Consolas", monospace; font-size: 13px; flex-grow: 1; outline: none;
+
+      #title-container { text-align: center; margin-bottom: 40px; }
+
+      h1 {
+        font-size: 100px;
+        line-height: 0.9;
+        letter-spacing: 15px;
+        margin: 0;
+        color: #fff;
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px var(--primary);
+        animation: flicker 4s infinite;
+      }
+
+      h2 {
+        font-size: 32px;
+        letter-spacing: 8px;
+        margin: 10px 0 0 0;
+        color: var(--primary);
+        text-shadow: 0 0 15px var(--primary);
+        font-weight: 400;
+        opacity: 0.9;
+      }
+
+      #quote-text {
+        margin-top: 20px;
+        font-size: 16px;
+        color: #ffffff;
+        letter-spacing: 2px;
+        text-align: center;
+        font-style: italic;
+        opacity: 0.8;
+        animation: pulse 4s infinite ease-in-out;
+      }
+
+      #version-text {
+        position: absolute; bottom: 40px; left: 40px; 
+        font-size: 12px; color: #666; letter-spacing: 1px;
+      }
+
+      /* --- RIGHT SECTION (INTERACTIVE) --- */
+      #section-right {
+        flex: 1;
+        background-color: #000; /* Default Dark */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow: hidden; /* Keep cursor inside */
+      }
+
+      /* THE FLASHLIGHT GRID LAYER */
+      #flashlight-grid {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        /* The Grid Pattern */
+        background-image: 
+          linear-gradient(#cccccc 1px, transparent 1px),
+          linear-gradient(90deg, #cccccc 1px, transparent 1px);
+        background-size: 40px 40px;
+        
+        /* The Flashlight Mask (Reveals grid at --x, --y) */
+        mask-image: radial-gradient(circle 300px at var(--x, 50%) var(--y, 50%), black 0%, transparent 100%);
+        -webkit-mask-image: radial-gradient(circle 300px at var(--x, 50%) var(--y, 50%), black 0%, transparent 100%);
+        
+        pointer-events: none; /* Let clicks pass through to menu */
+        opacity: 0; /* Hidden until mouse enters */
+        transition: opacity 0.3s ease;
+        z-index: 1;
+      }
+
+      /* THE GAMEPLAY CURSOR (Glowing Circle) */
+      /* THE GAMEPLAY CURSOR (Glowing Circle) */
+      #custom-cursor {
+        position: absolute;
+        width: 20px; height: 20px;
+        background: #fff;
+        border-radius: 50%;
+        box-shadow: 0 0 15px var(--primary), 0 0 30px var(--primary);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 20; 
+        opacity: 0;
+        transition: opacity 0.2s; /* Removed 'left' and 'top' transition for instant tracking */
+      }
+
+      /* Vignette for depth (Always visible) */
+      #section-right::after {
+        content: "";
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: radial-gradient(circle at center, transparent 0%, #000 120%);
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      /* GLOBAL GLOW CONTAINER (Behind Menu) */
+      #menu-glow-container {
+        position: absolute;
+        width: 400px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(0, 243, 255, 0.08) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 5;
+        animation: breathe 6s infinite ease-in-out;
+      }
+
+      #menu-container {
+        display: flex; flex-direction: column; gap: 20px; 
+        width: 350px; 
+        z-index: 10; /* Must be clickable */
+      }
+
+      /* MENU BUTTONS */
+      .menu-btn {
+        position: relative;
+        background: var(--box-bg);
+        border: 1px solid #333;
+        padding: 18px 25px; 
+        font-family: "Inconsolata", monospace;
+        font-size: 18px; 
+        color: #888;
+        cursor: pointer;
+        transition: 0.3s;
+        text-align: left;
+        overflow: hidden;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+
+      .menu-btn.active {
+        color: #fff;
+        border-color: var(--primary);
+        box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
+        background: rgba(0, 40, 40, 0.95);
+      }
+
+      .menu-btn.disabled {
+        opacity: 0.4; cursor: not-allowed; color: #d3d3d3;
+        border-color: #333; background: rgba(0, 10, 10, 0.8);
+      }
+
+      /* Electric Border Animation */
+      .menu-btn.active::after {
+        content: ""; position: absolute; top: 0; left: -100%; width: 100%; height: 2px;
+        background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        animation: electric-slide 2s infinite linear;
+      }
+      .menu-btn.active::before {
+        content: ""; position: absolute; bottom: 0; right: -100%; width: 100%; height: 2px;
+        background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        animation: electric-slide 2s infinite linear reverse;
+      }
+
+      .menu-btn:hover:not(.disabled) {
+        color: var(--primary); text-shadow: 0 0 8px var(--primary);
+        border-color: #fff; transform: translateX(5px);
+        box-shadow: 0 0 15px rgba(0, 243, 255, 0.1); 
+      }
+
+      /* --- TOKEN OVERLAY --- */
+      #token-overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.92);
+        display: none; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 1000; backdrop-filter: blur(8px);
+      }
+      #token-overlay.visible { display: flex; }
+
+      .token-box {
+        width: 450px; padding: 40px;
+        background: #000; border: 1px solid #00d9ff;
+        box-shadow: 0 0 40px rgba(0, 183, 255, 0.2); text-align: center;
+      }
+      .token-box h2 { color: #00d9ff; margin-bottom: 20px; letter-spacing: 3px; font-weight: bold; font-size: 24px;}
+      .token-box p { color: #ccc; font-size: 14px; margin-bottom: 30px; line-height: 1.5; }
+      
+      #token-input {
+        width: 90%; padding: 12px; background: #080808; border: 1px solid #444;
+        color: white; font-family: "Inconsolata", monospace; text-align: center;
+        font-size: 20px; margin-bottom: 25px; outline: none; letter-spacing: 2px; transition: 0.3s;
+      }
+      #token-input:focus { border-color: var(--secondary); box-shadow: 0 0 10px rgba(189, 0, 255, 0.3); }
+      
+      .token-actions { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+      .token-btn {
+        padding: 10px 20px; cursor: pointer; background: #050505; border: 1px solid #444;
+        color: #888; font-family: "Inconsolata", monospace; font-size: 12px;
+        transition: 0.2s; text-transform: uppercase; letter-spacing: 1px;
+      }
+      .token-btn.primary { border-color: #00d9ff; color: #00d9ff; font-weight: bold; }
+      .token-btn:hover { background: #222; color: #fff; border-color: #fff; }
+
+      /* --- ANIMATIONS --- */
+      @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+      @keyframes breathe { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+      @keyframes electric-slide { 0% { left: -100%; } 50% { left: 100%; } 100% { left: 100%; } }
+      @keyframes flicker {
+        0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px var(--primary); }
+        20%, 24%, 55% { opacity: 0.7; text-shadow: none; }
       }
     </style>
   </head>
   <body>
-    <div id="fade-layer"></div>
-    <div id="glitch-layer"></div>
-    
-    <div id="cinematic-overlay">
-      <div id="intro-title" class="title-text">0110</div>
-      <div id="intro-sub" class="subtitle-text">THE INSTITUTE</div>
-      <div id="intro-dev" class="dev-text" style="font-size: 18px;">A Samir C Production</div>
+    <div id="fade-overlay"></div>
+    <div id="music-toggle" onclick="Menu.toggleMusic()">♫</div>
+
+    <div id="main-wrapper">
+        <div id="section-left">
+            <div id="title-container">
+                <h1>0110</h1>
+                <h2>THE INSTITUTE</h2>
+            </div>
+            
+            <div id="quote-text">"A life without freedom is a life wasted."</div>
+            
+            <div id="version-text">Build 1.11.2</div>
+        </div>
+
+        <div id="section-right">
+            <div id="flashlight-grid"></div>
+            <div id="custom-cursor"></div>
+            
+            <div id="menu-glow-container"></div>
+            
+            <div id="menu-container">
+                <div class="menu-btn active" onclick="Menu.start()">
+                    > <span id="btn-start-text">INITIALIZE</span>
+                </div>
+                <div class="menu-btn" onclick="Menu.loadChapters()">
+                    > LOAD_CHAPTER
+                </div>
+                <div class="menu-btn" onclick="Menu.readStory()">
+                    > READ_ARCHIVES
+                </div>
+                <div class="menu-btn disabled">
+                    > STORE [OFFLINE]
+                </div>
+                <div class="menu-btn" onclick="Menu.quit()">
+                    > TERMINATE
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="story-overlay">
-      <div id="story-content">
-        <h2>0. The Invitation</h2>
-        <p>
-          Will received a mysterious email inviting him to a virtual world called <b>The Metaphor</b>. He ignored it until one line caught his attention, <i>his friend Andrew was waiting there.</i><br><br>
-
-When Andrew suddenly went missing, Will searched his house and found the same emails. Andrew had tried to escape, but failed.<br><br>
-
-Will replied, demanding answers. A link and a voice note appeared. It was Andrew, inviting him in, but something felt wrong.<br><br>
-
-Will refused, but his screen turned on by itself. A strange video began to play, and his body went numb.<br><br>
-
-He was pulled in.<br><br>
-
-Into the void.<br><br>
-
-Read the full story on <a href="story.html" style="color: var(--primary); text-decoration: underline">0110-game-docs</a>. Thanks for playing the demo.
-
-        </p>
-        <p style="color: var(--primary); text-align: center; margin-top: 20px;">Tips: Use 'WASD' to move around.</p>
-        <p style="font-size: 14px; color: #888; text-align: center;">Version 1.01</p>
-      </div>
-    </div>
-
-    <div id="pause-overlay">
-      <div id="pause-text">PAUSED</div>
-    </div>
-
-    <div id="ui-layer">
-      <div id="hud-top-left" class="hud-element locked">
-        <div id="system-log">
-          <div class="log-entry">> PROTOCOL INITIATED</div>
+    <div id="token-overlay">
+      <div class="token-box">
+        <h2 id="token-title">ACCESS RESTRICTED</h2>
+        <p id="token-msg">Please enter your Access Token to continue.</p>
+        <input type="text" id="token-input" placeholder="ABC-123-XYZ" autocomplete="off">
+        <div class="token-actions">
+            <button class="token-btn primary" onclick="TokenSystem.submit()">VERIFY TOKEN</button>
+            <button class="token-btn" id="btn-skip" onclick="TokenSystem.skip()">CONTINUE WITHOUT TOKEN</button>
         </div>
-        <div id="coords-display">LOC: [0, 0]</div>
-      </div>
-
-      <div id="hud-top-right" class="hud-element locked">
-        <div id="menu-icon" class="clickable" onclick="UI.toggleMenu()">☰</div>
-        <div id="menu-dropdown">
-          <div class="menu-item clickable" onclick="UI.log('SAVING DISABLED (TUTORIAL)')">SAVE</div>
-          <div class="menu-item clickable" onclick="UI.log('SETTINGS')">SETTINGS</div>
-          <div class="menu-item clickable" onclick="location.reload()">REBOOT</div>
-        </div>
-      </div>
-
-      <div id="hud-bottom-left" class="hud-element locked">
-        <div id="data-bank">DATA: 0 MB</div>
-        <div id="minimap-container">
-          <canvas id="minimap-canvas" width="140" height="140"></canvas>
-          <div id="minimap-border"></div>
-        </div>
-      </div>
-
-      <div id="hud-bottom-center" class="hud-element locked">
-        <div class="stats-row">
-          <div class="bar-wrapper">
-            <span class="bar-label">INTEGRITY</span>
-            <div class="bar-container"><div id="bar-health"></div></div>
-          </div>
-          <div class="bar-wrapper">
-            <span class="bar-label">LIGHT</span>
-            <div class="bar-container"><div id="bar-light"></div></div>
-          </div>
-        </div>
-        <div id="hotbar">
-          <div class="slot" id="slot-1">1</div>
-          <div class="slot" id="slot-2">2</div>
-          <div class="slot" id="slot-3">3</div>
-          <div class="slot" id="slot-4">4</div>
-          <div class="slot" id="slot-5">5</div>
-        </div>
-      </div>
-
-      <div id="hud-bottom-right" class="hud-element locked">
-        <div id="terminal-wrapper">
-          <div class="term-header">
-            <span>CONNECTION: SECURE</span>
-            <span>USER: WilliamHayes</span>
-          </div>
-          <div id="term-output"></div>
-          <div id="term-input-line">
-            <span style="color: var(--terminal-text); margin-right: 10px">></span>
-            <input type="text" id="term-input" autocomplete="off" />
-          </div>
-        </div>
-        <div id="tablet-icon" class="clickable" onclick="Terminal.toggle()">&lt;/&gt;</div>
+        <div id="token-status" style="margin-top: 15px; font-size: 12px; color: #f33;"></div>
       </div>
     </div>
 
-    <canvas id="gameCanvas"></canvas>
+    <script>
+      /* --- HOME PAGE LOGIC --- */
+      const GameState = {
+        hasToken: false,
+        token: null,
+        chapter: 0,
+        musicPlaying: false
+      };
+      
+      let bgm = null;
 
-    <script type="module" src="src/index_main.js"></script>
+      // INIT
+      window.onload = () => {
+        document.body.classList.add('loaded');
+        
+        // MOUSE TRACKING LOGIC
+        const sectionRight = document.getElementById("section-right");
+        const gridLayer = document.getElementById("flashlight-grid");
+        const cursor = document.getElementById("custom-cursor");
+        const buttons = document.querySelectorAll(".menu-btn");
+        let isHoveringButton = false;
+
+        // 1. Move Flashlight & Cursor (FIXED SCALING)
+        sectionRight.addEventListener("mousemove", (e) => {
+            const rect = sectionRight.getBoundingClientRect();
+            
+            // Calculate X/Y relative to the section
+            let x = e.clientX - rect.left;
+            let y = e.clientY - rect.top;
+
+            // --- THE FIX: COMPENSATE FOR 0.85 SCALE ---
+            // If we don't divide by 0.85, the cursor moves faster than the mouse
+            x = x / 1.00; 
+            y = y / 1.00;
+
+            // Update CSS Variables for Mask and Cursor position
+            sectionRight.style.setProperty("--x", `${x}px`);
+            sectionRight.style.setProperty("--y", `${y}px`);
+            
+            // Update Cursor Element Position directly (Smoother)
+            cursor.style.left = `${x}px`;
+            cursor.style.top = `${y}px`;
+            
+            // Show effects
+            gridLayer.style.opacity = "1";
+            
+            if (!isHoveringButton) {
+                cursor.style.opacity = "1";
+                sectionRight.style.cursor = "none"; 
+            }
+        });
+
+        // 2. Hide when leaving the right section
+        sectionRight.addEventListener("mouseleave", () => {
+            gridLayer.style.opacity = "0";
+            cursor.style.opacity = "0";
+            sectionRight.style.cursor = "default";
+        });
+
+        // 3. Handle Menu Button Interactivity
+        buttons.forEach(btn => {
+            btn.addEventListener("mouseenter", () => {
+                isHoveringButton = true;
+                cursor.style.opacity = "0"; // Hide Glowing Circle
+                sectionRight.style.cursor = "pointer"; // Show System Hand
+            });
+            btn.addEventListener("mouseleave", () => {
+                isHoveringButton = false;
+                cursor.style.opacity = "1"; // Show Glowing Circle
+                sectionRight.style.cursor = "none"; // Hide System Cursor
+            });
+        });
+
+        // REST OF THE LOGIC (Unchanged)
+        const saved = localStorage.getItem("0110_save_v2");
+        if (saved) {
+            const data = JSON.parse(saved);
+            if (data.chapter && data.chapter >= 1) {
+                GameState.chapter = data.chapter;
+                document.getElementById("btn-start-text").innerText = "CONTINUE";
+            }
+        }
+
+        setTimeout(() => {
+            TokenSystem.check();
+        }, 1500);
+      };
+
+      const Menu = {
+        start: () => {
+            Menu.transition(() => {
+                if (GameState.chapter === 0) window.location.href = "tutorial.html";
+                else window.location.href = "game.html";
+            });
+        },
+        loadChapters: () => { alert("SYSTEM: SAVE SLOTS EMPTY"); },
+        readStory: () => { window.open("https://your-story-link.com", "_blank"); },
+        quit: () => {
+            window.close();
+            document.body.innerHTML = "<div style='display:flex;justify-content:center;align-items:center;height:100vh;background:#000;color:#333;font-family:monospace;'>TERMINATED</div>";
+        },
+        transition: (callback) => {
+            document.body.classList.remove('loaded');
+            document.body.classList.add('exiting');
+            setTimeout(callback, 1500); 
+        },
+        toggleMusic: () => {
+            const icon = document.getElementById("music-toggle");
+            if (!bgm) {
+                bgm = new Audio('assets/bgm1.mp3'); 
+                bgm.loop = true;
+                bgm.volume = 0.5;
+            }
+            if (GameState.musicPlaying) {
+                bgm.pause();
+                icon.classList.remove("active");
+                icon.innerText = "♫";
+            } else {
+                bgm.play().catch(e => console.log("Audio Blocked"));
+                icon.classList.add("active");
+                icon.innerText = "🔊";
+            }
+            GameState.musicPlaying = !GameState.musicPlaying;
+        }
+      };
+
+      const TokenSystem = {
+        // REPLACE THIS WITH YOUR GOOGLE SHEET CSV LINK
+        sheetURL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vREV1T2aT2NSZGp2i_VInmVnK5Oq0Xjd5HwXUaSg07S2OenHmbhnCjUelomfCMRsHALYzi5MMp2OVEP/pub?output=csv", 
+        
+        check: () => {
+            // 1. Check if Premium is already unlocked locally
+            const isUnlocked = localStorage.getItem("0110_access_token");
+            
+            // If unlocked, we don't need to show the overlay for Chapter 2
+            if (isUnlocked && GameState.chapter >= 2) {
+                 return; 
+            }
+
+            // If Paywalled (Chapter 2+) AND not unlocked -> Block Access
+            const isPaywalled = GameState.chapter >= 2; 
+            const overlay = document.getElementById("token-overlay");
+            
+            if (isPaywalled && !isUnlocked) {
+                overlay.classList.add("visible");
+                document.getElementById("token-title").innerText = "ACCESS RESTRICTED";
+                document.getElementById("token-msg").innerText = "Chapter 2 requires a valid Access Token.";
+                document.getElementById("btn-skip").style.display = "none";
+            }
+        },
+
+        submit: async () => {
+            const inputVal = document.getElementById("token-input").value.trim();
+            const status = document.getElementById("token-status");
+            
+            if (!inputVal) {
+                status.innerText = "ERR: EMPTY FIELD";
+                return;
+            }
+
+            status.innerText = "CONNECTING TO ARCHIVE...";
+            status.style.color = "#fff";
+            
+            try {
+                // 1. Fetch the Google Sheet List
+                const res = await fetch(TokenSystem.sheetURL);
+                const csvText = await res.text();
+                
+                // 2. Parse the List (Split by new lines)
+                const validTokens = csvText.split("\n").map(t => t.trim());
+                
+                // 3. Verify
+                if (validTokens.includes(inputVal)) {
+                    status.style.color = "#00ffaa";
+                    status.innerText = "ACCESS GRANTED. WRITING TO DISK...";
+                    
+                    // Save the "Proof of Purchase" locally
+                    localStorage.setItem("0110_access_token", inputVal);
+                    
+                    GameState.hasToken = true;
+                    setTimeout(() => {
+                        document.getElementById("token-overlay").classList.remove("visible");
+                    }, 1000);
+                } else {
+                    status.style.color = "#f33";
+                    status.innerText = "ERR: INVALID TOKEN KEY";
+                }
+            } catch (e) {
+                status.innerText = "ERR: NETWORK/DATABASE OFFLINE";
+            }
+        },
+
+        skip: () => {
+            // Only allows skipping if NOT on Chapter 2
+            document.getElementById("token-overlay").classList.remove("visible");
+        }
+      };
+    </script>
   </body>
 </html>

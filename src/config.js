@@ -6,8 +6,8 @@ export const Config = {
   maxLightLevel: 2.0,
   safeZoneRadius: 300,
   colors: {
-    grid: "#222",
-    wall: "#fff",
+    grid: "#555",
+    wall: "#ffffff",
     fragment: "#00f3ff",
     enemy: "#ff3333",
     safe: "#00ffaa",
@@ -27,13 +27,13 @@ export const Config = {
   audio: {
     // These paths match your original game.html. 
     // Ensure the files are in the corresponding locations in your folder.
-    bgm: ["bgm1.mp3", "bgm2.mp3", "bgm3.mp3"],
+    bgm: [""],
     sfx: {
       term_open: "term.mp3",
       term_close: "term.mp3",
       term_success: "sfx/term_success.mp3",
       obj_toggle: "obj.mp3",
-      obj_update: "obj2.mp3",
+      obj_update: "/assets/obj2.mp3",
       log: "",
       intro_hit: "on2.wav",
       story_ambience: "",

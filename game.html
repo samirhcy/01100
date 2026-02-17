@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>0110-The Institute (Chapter 1)</title>
+    
+    <!--<link rel="icon" type="image/png" href="" />-->
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
     <style>
       :root {
         --primary: #00f3ff;
@@ -21,7 +31,8 @@
         margin: 0;
         overflow: hidden;
         background-color: #000000;
-        font-family: "Courier New", Courier, monospace;
+        /* UPDATED FONT FAMILY */
+        font-family: "Inconsolata", "Courier New", monospace;
         color: white;
         user-select: none;
       }
@@ -51,7 +62,23 @@
         pointer-events: none;
         opacity: 0;
         transition: opacity 2s;
+        /* RESPONSIVE SCALING ORIGIN */
+        transform-origin: top center;
       }
+      
+      /* RESPONSIVE MEDIA QUERY: Mimic 85% Zoom on Laptops/Small Screens */
+      @media (max-width: 1366px), (max-height: 800px) {
+        #ui-layer {
+          transform: scale(0.85);
+          width: 117.6%; /* Compensate for scale down (100 / 0.85) */
+          height: 117.6%;
+          left: -8.8%;   /* Center the scaled layer */
+          top: -8.8%;
+          --margin: 20px; 
+        }
+        
+      }
+
       #ui-layer.active {
         opacity: 1;
       }
@@ -116,6 +143,8 @@
         background: black;
         opacity: 0;
         transition: opacity 2s;
+        padding: 20px; /* Prevent text touching edges */
+        box-sizing: border-box;
       }
       #fade-overlay {
         background: black;
@@ -148,12 +177,22 @@
         transition: opacity 2s ease-in-out;
       }
 
-      /* STORY TEXT STYLES */
+      /* STORY TEXT STYLES - RESPONSIVE UPDATE */
       #story-content {
-        max-width: 600px;
+        width: 100%;
+        max-width: 600px; /* Limits width on big screens */
         text-align: center;
         color: #ddd;
       }
+      /* On very small screens, ensure text doesn't overflow */
+      @media (max-width: 600px) {
+        #story-content {
+           max-width: 90%;
+        }
+        #story-content h2 { font-size: 24px; }
+        #story-content p { font-size: 14px; }
+      }
+      
       #story-content h2 {
         font-size: 32px;
         color: var(--primary);
@@ -254,16 +293,20 @@
         display: block;
       }
       .menu-item {
-        padding: 10px;
-        font-size: 12px;
-        color: #ccc;
-        cursor: pointer;
-        border-bottom: 1px solid #333;
-      }
-      .menu-item:hover {
-        background: rgba(0, 243, 255, 0.1);
-        color: white;
-      }
+  padding: 15px 20px; /* Bigger touch target */
+  font-size: 14px;
+  color: #ccc;
+  cursor: pointer;
+  border-bottom: 1px solid #333;
+  background: rgba(0, 0, 0, 0.9);
+  transition: 0.2s;
+  letter-spacing: 1px;
+}
+.menu-item:hover {
+  background: rgba(0, 243, 255, 0.2);
+  color: white;
+  padding-left: 25px; /* Slide effect */
+}
 
       /* OBJECTIVE MODULE */
       #hud-bottom-left {
@@ -570,7 +613,7 @@
         flex-grow: 1;
         padding: 15px;
         overflow-y: auto;
-        font-family: "Consolas", monospace;
+        font-family: "Inconsolata", "Consolas", monospace;
         font-size: 12px;
         color: var(--terminal-text);
         line-height: 1.5;
@@ -589,7 +632,7 @@
         background: transparent;
         border: none;
         color: var(--terminal-text);
-        font-family: "Consolas", monospace;
+        font-family: "Inconsolata", "Consolas", monospace;
         font-size: 13px;
         flex-grow: 1;
         outline: none;
@@ -674,18 +717,16 @@
       <div id="hud-top-right" class="hud-element">
         <div id="menu-icon" onclick="UISystem.toggleMenu()">☰</div>
         <div id="menu-dropdown">
-          <div class="menu-item" onclick="SaveSystem.save()">SAVE GAME</div>
-          <div class="menu-item" onclick="SaveSystem.reboot()">
-            REBOOT SYSTEM
-          </div>
-          <div
-            class="menu-item"
-            id="btn-bgm-toggle"
-            onclick="AudioSystem.toggleBGM()"
-          >
-            MUTE BGM
-          </div>
-        </div>
+  <div class="menu-item" onclick="SaveSystem.save()">
+      > SAVE SIGNAL
+  </div>
+  <div class="menu-item" onclick="SaveSystem.saveAndExit(1)">
+      > EXIT TO NEURAL LINK
+  </div>
+  <div class="menu-item" id="btn-bgm-toggle" onclick="AudioSystem.toggleBGM()">
+      > MUTE AUDIO
+  </div>
+</div>
       </div>
       <div id="hud-bottom-left" class="hud-element">
         <div id="objective-wrapper">
