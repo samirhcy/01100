@@ -46,24 +46,29 @@ export const SaveSystem = {
     State.game = { ...State.game, ...data.game };
     State.hotbar = data.inventory || State.hotbar;
     
-    // Restore Objective Phase
-    // If they were in Phase 1 (index 0) or 2 (index 1), restore it.
     if (data.game.killCount > 0) ObjectiveSystem.currentPhaseIndex = 1; 
     if (data.game.survivalTimer > 0) ObjectiveSystem.currentPhaseIndex = 2;
 
     return true;
   },
   
-  // END GAME TRANSITION (Fixes Black Screen)
+  // --- THE FIX IS HERE ---
   saveAndExit: (nextChapter) => {
-      // 1. Mark Chapter 2 as Unlocked in Local Storage
-      // This is what the Home Page checks to show the Overlay or not.
-      localStorage.setItem("0110_access_token", "UNLOCKED_BY_GAMEPLAY");
+      // 1. UPDATE MASTER SAVE (Used by Home Page)
+      // We explicitly save "chapter: 2". This triggers the "Paywall" logic on the Home Page.
+      const masterSave = {
+          chapter: nextChapter,
+          unlocked: false // <--- Important: We say it's NOT unlocked yet.
+      };
+      localStorage.setItem("0110_save_v2", JSON.stringify(masterSave));
       
-      // 2. Clear the mid-game checkpoint (so they start fresh next time)
+      // 2. Clear the mid-game checkpoint (Player starts fresh in Ch2)
       localStorage.removeItem("0110_checkpoint");
 
-      // 3. Redirect to Home
+      // 3. REMOVED: Do NOT set "0110_access_token". 
+      // This ensures the player MUST enter a key to proceed.
+
+      // 4. Redirect to Home
       window.location.href = "index.html";
   }
 };
