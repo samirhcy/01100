@@ -80,9 +80,9 @@ export const WorldEntity = {
   spawnEnemyRing: () => {
     // ESCALATION LOGIC (Exact Copy from game.html)
     let count = 1;
-    if (State.game.killCount >= 20) count = 5;
-    else if (State.game.killCount >= 12) count = 4; // Note: You had 12 here in game.html, not 15
-    else if (State.game.killCount > 5) count = 3;
+    if (State.game.killCount >= 20) count = 4;
+    else if (State.game.killCount >= 12) count = 3; // Note: You had 12 here in game.html, not 15
+    else if (State.game.killCount > 5) count = 2;
 
     for (let k = 0; k < count; k++) {
       for (let i = 0; i < 50; i++) {
@@ -131,6 +131,6 @@ export const WorldEntity = {
     );
     
     // Ambush!
-    for (let i = 0; i < 5; i++) WorldEntity.spawnEnemyRing();
+    for (let i = 0; i < 2; i++) WorldEntity.spawnEnemyRing();
   },
 };
