@@ -19,11 +19,22 @@ import { UISystem } from './ui/HUD.js';
 import { ObjectiveSystem } from './ui/Objective.js';
 import { Cinematics } from './ui/Cinematics.js';
 
-// Expose Systems
+// Expose Systems for Console Debugging
 window.UISystem = UISystem;
 window.SaveSystem = SaveSystem;
 window.AudioSystem = AudioSystem;
 window.TerminalSystem = TerminalSystem;
+
+// --- DEVELOPER SKIP COMMAND (Type devSkip() in console) ---
+window.devSkip = () => {
+    console.log(">> DEV MODE: SKIPPING TO END GAME");
+    State.player.combatUnlocked = true;
+    State.game.killCount = 25; 
+    ObjectiveSystem.currentPhaseIndex = 2; // Jump to final phase
+    State.game.survivalTimer = 590; // 1 second before Safe Haven spawns
+    State.player.x = 0; State.player.y = 0; // Teleport to center
+    TerminalSystem.log("DEV: WARP TO FINALE EXECUTED", "error");
+};
 
 const GameLogic = {
   init: async () => {
@@ -31,15 +42,18 @@ const GameLogic = {
     InputSystem.init();
     RenderSystem.init();
 
-    // 2. START THE LOOP IMMEDIATELY (Fixes Black Screen)
-    // We start drawing right away so the user never sees a "dead" screen.
+    // 2. START LOOP IMMEDIATELY (Fixes Black Screen)
+    // We start drawing the void/loading screen instantly.
     requestAnimationFrame(GameLogic.loop);
 
-    // 3. Check for Save Data
-    // We try to load. If it returns true, we restore the session.
-    // If false, we start a fresh game.
+    // 3. Check for Checkpoint
     if (await SaveSystem.load()) {
-        TerminalSystem.log("SYSTEM RESTORED");
+        TerminalSystem.log("CHECKPOINT RESTORED", "safe");
+        
+        // If we loaded a save, ensure Objective UI matches the data
+        if (State.game.killCount >= 5) ObjectiveSystem.currentPhaseIndex = 1;
+        if (State.game.survivalTimer > 0) ObjectiveSystem.currentPhaseIndex = 2;
+        ObjectiveSystem.render();
     } else {
         // 4. New Game Setup
         State.player.mode = "roam";
@@ -48,8 +62,7 @@ const GameLogic = {
         GameLogic.checkChunks();
         ObjectiveSystem.init();
         
-        // 5. Play Intro (Non-Blocking)
-        // We await here, but the loop is already running in the background!
+        // Only play Intro if it's a fresh start
         await Cinematics.playIntro();
     }
   },
@@ -65,28 +78,41 @@ const GameLogic = {
   },
 
   loop: () => {
-    if (State.player.isDead || State.game.paused) {
+    // Logic Loop
+    if (!State.player.isDead && !State.game.paused) {
+        const timeScale = State.player.isTerminalOpen ? 0.1 : 1.0;
+
+        PlayerEntity.update(timeScale);
+        GameLogic.checkChunks();
+        
+        // Updates
+        ObjectiveSystem.update();
+        UISystem.update();
+        AudioSystem.init(); 
+
+        if (timeScale > 0 && State.player.combatUnlocked) {
+            EnemyEntity.update(timeScale);
+            updateProjectiles(timeScale);
+        }
+
+        handleGameRules();
+        handleFragments();
+    } else {
+        // If paused/dead, we still draw the screen so it's not black
         if(State.game.paused) RenderSystem.draw(); 
-        requestAnimationFrame(GameLogic.loop);
-        return;
     }
 
-    const timeScale = State.player.isTerminalOpen ? 0.1 : 1.0;
+    // Draw Frame
+    RenderSystem.draw();
+    
+    // Repeat
+    requestAnimationFrame(GameLogic.loop);
+  }
+};
 
-    PlayerEntity.update(timeScale);
-    GameLogic.checkChunks();
-    ObjectiveSystem.update();
-    UISystem.update();
-    AudioSystem.init(); 
+// --- LOGIC HELPERS ---
 
-    if (timeScale > 0 && State.player.combatUnlocked) {
-        EnemyEntity.update(timeScale);
-        updateProjectiles(timeScale);
-    }
-
-    handleGameRules();
-
-    // Fragment Collection
+function handleFragments() {
     for(let i = State.world.fragments.length - 1; i >= 0; i--) {
         let f = State.world.fragments[i];
         if (f.active && Utils.dist(State.player.x, State.player.y, f.x, f.y) < 20) {
@@ -96,19 +122,13 @@ const GameLogic = {
             State.world.fragments.splice(i, 1);
         }
     }
-    
     if (State.world.fragments.filter((f) => f.active).length < 20) {
         WorldEntity.spawnInChunk(State.player.x, State.player.y, "fragment");
     }
-
-    RenderSystem.draw();
-    requestAnimationFrame(GameLogic.loop);
-  }
-};
-
-// --- LOGIC HELPERS ---
+}
 
 function handleGameRules() {
+    // A. Spawn Enemies based on Kills
     let spawnChance = 0.01;
     let maxEnemies = 5 + State.game.killCount / 3;
 
@@ -119,25 +139,34 @@ function handleGameRules() {
       if (Math.random() < spawnChance) WorldEntity.spawnEnemyRing();
     }
 
+    // B. Survival Phase Logic
     if (ObjectiveSystem.currentPhaseIndex === 2 && !State.game.safeHaven) {
+      // Check if enemies are nearby to count "survival" time
       let enemiesNearby = State.world.enemies.some((e) => Utils.dist(State.player.x, State.player.y, e.x, e.y) < 600);
       let tooClose = State.world.enemies.some((e) => Utils.dist(State.player.x, State.player.y, e.x, e.y) < 250);
       
+      // If enemies are around but not touching you, timer goes up
       if (enemiesNearby && !tooClose) State.game.survivalTimer++;
+      
+      // Spawn Safe Haven after 600 frames (~10s)
       if (State.game.survivalTimer > 600) WorldEntity.spawnSafeHaven();
     }
 
+    // C. WIN CONDITION (Safe Haven)
     if (State.game.safeHaven) {
       const h = State.game.safeHaven;
       if (Utils.dist(State.player.x, State.player.y, h.x, h.y) < h.r) {
         State.game.safeTimer++;
+        
+        // If player stays in circle for 3 seconds (180 frames)
         if (State.game.safeTimer > 180) {
           document.getElementById("fade-overlay").style.opacity = 1;
           TerminalSystem.print(">> SIGNAL LOCK. UPLOADING...", "#00ffaa");
           
           if (!State.player.isDead) {
+              // --- CRITICAL UPDATE: CALL SAVE & EXIT ---
               setTimeout(() => {
-                  SaveSystem.saveAndExit(2); 
+                  SaveSystem.saveAndExit(2); // Unlock Chapter 2
               }, 2000);
           }
         }
@@ -190,4 +219,5 @@ function killPlayer() {
     setTimeout(() => { window.location.href = "index.html"; }, 3000); 
 }
 
+// Start Game
 GameLogic.init();

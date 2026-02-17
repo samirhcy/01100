@@ -1,6 +1,7 @@
 import { State } from '../state.js';
 import { AudioSystem } from '../systems/Audio.js';
-import { TerminalSystem } from './Terminal.js'; // Helper function needs to call Log
+import { TerminalSystem } from './Terminal.js'; 
+import { SaveSystem } from '../systems/Save.js'; // <--- ADDED: Needed for Checkpoints
 
 export const ObjectiveSystem = {
   wrapper: document.getElementById("objective-wrapper"),
@@ -11,6 +12,8 @@ export const ObjectiveSystem = {
 
   currentPhaseIndex: 0,
   expanded: false,
+  
+  // YOUR ORIGINAL PHASES & TASKS
   phases: [
     {
       name: "INITIALIZATION",
@@ -19,21 +22,25 @@ export const ObjectiveSystem = {
           id: "data",
           text: "Gather 100 Data",
           check: () => State.player.data >= 100,
+          done: false
         },
         {
           id: "compile",
           text: "Unlock Profiles (sys.compile)",
           check: () => State.player.combatUnlocked,
+          done: false
         },
         {
           id: "light",
           text: "Boost Light (sys.lumos)",
           check: () => State.player.lightLevel > 1.0,
+          done: false
         },
         {
           id: "def",
           text: "Add Protection (Shield/Cloak)",
           check: () => State.player.shield > 0 || State.player.cloaked,
+          done: false
         },
       ],
       complete: false,
@@ -45,16 +52,19 @@ export const ObjectiveSystem = {
           id: "k5",
           text: "Eliminate 5 Anomalies",
           check: () => State.game.killCount >= 5,
+          done: false
         },
         {
           id: "k10",
           text: "Eliminate 10 Anomalies",
           check: () => State.game.killCount >= 10,
+          done: false
         },
         {
           id: "k20",
           text: "Eliminate 20 Anomalies",
           check: () => State.game.killCount >= 20,
+          done: false
         },
       ],
       complete: false,
@@ -66,16 +76,19 @@ export const ObjectiveSystem = {
           id: "dist",
           text: "Maintain Distance from Hostiles",
           check: () => State.game.survivalTimer > 600,
+          done: false
         },
         {
           id: "find",
           text: "Locate Safe Haven Signal",
           check: () => State.game.safeHaven !== null,
+          done: false
         },
         {
           id: "esc",
           text: "Enter Beacon & Evacuate",
           check: () => State.game.safeTimer > 0,
+          done: false
         },
       ],
       complete: false,
@@ -83,13 +96,18 @@ export const ObjectiveSystem = {
   ],
 
   init: () => {
-    // Re-cache DOM elements in init to ensure they exist on load
+    // Re-cache DOM elements
     ObjectiveSystem.wrapper = document.getElementById("objective-wrapper");
     ObjectiveSystem.summary = document.getElementById("obj-summary");
     ObjectiveSystem.title = document.getElementById("obj-phase-title");
     ObjectiveSystem.list = document.getElementById("obj-task-list");
     ObjectiveSystem.dot = document.getElementById("obj-pulse-dot");
     
+    // Restore Phase Index based on state if loading save
+    if (State.game.killCount >= 20) ObjectiveSystem.currentPhaseIndex = 2;
+    else if (State.player.combatUnlocked) ObjectiveSystem.currentPhaseIndex = 0; // Or 1 depending on logic
+    // (Note: The SaveSystem.load usually handles setting the index, but this is a backup)
+
     ObjectiveSystem.render();
   },
 
@@ -116,7 +134,7 @@ export const ObjectiveSystem = {
   notify: () => {
     AudioSystem.playSFX("obj_update");
     ObjectiveSystem.wrapper.classList.remove("pulse-anim");
-    void ObjectiveSystem.wrapper.offsetWidth;
+    void ObjectiveSystem.wrapper.offsetWidth; // Trigger reflow
     ObjectiveSystem.wrapper.classList.add("pulse-anim");
     ObjectiveSystem.dot.classList.add("active");
   },
@@ -124,6 +142,7 @@ export const ObjectiveSystem = {
   update: () => {
     if (ObjectiveSystem.currentPhaseIndex >= ObjectiveSystem.phases.length)
       return;
+    
     const phase = ObjectiveSystem.phases[ObjectiveSystem.currentPhaseIndex];
     let allDone = true;
     let changed = false;
@@ -145,7 +164,14 @@ export const ObjectiveSystem = {
     if (allDone && !phase.complete) {
       phase.complete = true;
       TerminalSystem.log(`PHASE COMPLETE: ${phase.name}`, "safe");
+      
+      // --- NEW: CHECKPOINT SAVE ---
+      // This is the missing piece! Auto-save when a phase is fully complete.
+      SaveSystem.save(); 
+      // ----------------------------
+
       ObjectiveSystem.notify();
+      
       setTimeout(() => {
         ObjectiveSystem.currentPhaseIndex++;
         if (ObjectiveSystem.currentPhaseIndex < ObjectiveSystem.phases.length) {
@@ -153,30 +179,40 @@ export const ObjectiveSystem = {
             `NEW OBJECTIVE: ${ObjectiveSystem.phases[ObjectiveSystem.currentPhaseIndex].name}`
           );
           ObjectiveSystem.render();
+          
+          // Optional: Save again at start of new phase so index is stored correctly
+          SaveSystem.save(); 
         }
       }, 1500);
     }
   },
 
   render: () => {
+    // End Game State
     if (ObjectiveSystem.currentPhaseIndex >= ObjectiveSystem.phases.length) {
-      ObjectiveSystem.summary.innerText = "OBJ: MISSION COMPLETE";
-      ObjectiveSystem.title.innerText = "ALL SYSTEMS GO";
-      ObjectiveSystem.list.innerHTML = `<div class="task-item done"><span class="task-checkbox">[x]</span><span>Await Extraction</span></div>`;
+      if(ObjectiveSystem.summary) ObjectiveSystem.summary.innerText = "OBJ: MISSION COMPLETE";
+      if(ObjectiveSystem.title) ObjectiveSystem.title.innerText = "ALL SYSTEMS GO";
+      if(ObjectiveSystem.list) ObjectiveSystem.list.innerHTML = `<div class="task-item done"><span class="task-checkbox">[x]</span><span>Await Extraction</span></div>`;
       return;
     }
+
     const phase = ObjectiveSystem.phases[ObjectiveSystem.currentPhaseIndex];
-    ObjectiveSystem.summary.innerText = `OBJ: ${phase.name}`;
-    ObjectiveSystem.title.innerText = `PHASE ${ObjectiveSystem.currentPhaseIndex + 1}: ${phase.name}`;
-    ObjectiveSystem.list.innerHTML = phase.tasks
-      .map(
-        (t) => `
-          <div class="task-item ${t.done ? "done" : ""}">
-              <span class="task-checkbox">[${t.done ? "x" : " "}]</span>
-              <span>${t.text}</span>
-          </div>
-      `
-      )
-      .join("");
+    
+    // Safety checks for DOM elements
+    if(ObjectiveSystem.summary) ObjectiveSystem.summary.innerText = `OBJ: ${phase.name}`;
+    if(ObjectiveSystem.title) ObjectiveSystem.title.innerText = `PHASE ${ObjectiveSystem.currentPhaseIndex + 1}: ${phase.name}`;
+    
+    if(ObjectiveSystem.list) {
+        ObjectiveSystem.list.innerHTML = phase.tasks
+          .map(
+            (t) => `
+              <div class="task-item ${t.done ? "done" : ""}">
+                  <span class="task-checkbox">[${t.done ? "x" : " "}]</span>
+                  <span>${t.text}</span>
+              </div>
+          `
+          )
+          .join("");
+    }
   },
 };

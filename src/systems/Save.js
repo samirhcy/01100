@@ -3,68 +3,67 @@ import { TerminalSystem } from '../ui/Terminal.js';
 import { ObjectiveSystem } from '../ui/Objective.js';
 
 export const SaveSystem = {
-  // ENCRYPTION HELPERS (Simple Base64 Obfuscation)
+  // ENCRYPTION (Base64)
   encrypt: (data) => {
-    try {
-        return btoa(JSON.stringify(data)); // Convert JSON -> Base64
-    } catch (e) { console.error("Encrypt failed", e); return null; }
+    try { return btoa(JSON.stringify(data)); } 
+    catch (e) { return null; }
   },
   
   decrypt: (str) => {
-    try {
-        return JSON.parse(atob(str)); // Convert Base64 -> JSON
-    } catch (e) { console.error("Decrypt failed", e); return null; }
+    try { return JSON.parse(atob(str)); } 
+    catch (e) { return null; }
   },
 
-  save: (slot = 1) => {
-    // 1. Gather Data
+  // AUTO-SAVE (CHECKPOINT)
+  save: () => {
     const saveData = {
         player: State.player,
         game: State.game,
         inventory: State.hotbar,
-        chapter: 1, // Track which chapter they are in
+        chapter: 1,
         timestamp: Date.now()
     };
 
-    // 2. Encrypt & Save to Local Storage
     const encrypted = SaveSystem.encrypt(saveData);
     if (encrypted) {
-        localStorage.setItem("0110_save_data", encrypted);
-        TerminalSystem.log("PROGRESS SAVED (ENCRYPTED)", "safe");
+        localStorage.setItem("0110_checkpoint", encrypted);
+        TerminalSystem.log("CHECKPOINT REACHED. PROGRESS SAVED.", "safe");
         return true;
     }
     return false;
   },
 
+  // LOAD CHECKPOINT
   load: async () => {
-    // 1. Get String
-    const raw = localStorage.getItem("0110_save_data");
+    const raw = localStorage.getItem("0110_checkpoint");
     if (!raw) return false;
 
-    // 2. Decrypt
     const data = SaveSystem.decrypt(raw);
-    if (!data) {
-        console.error("Save file corrupted or tampered.");
-        return false;
-    }
+    if (!data) return false;
 
-    // 3. Apply Data to State
+    // Restore State
     State.player = { ...State.player, ...data.player };
     State.game = { ...State.game, ...data.game };
     State.hotbar = data.inventory || State.hotbar;
     
-    // UI Updates
-    ObjectiveSystem.currentPhaseIndex = data.game.killCount > 0 ? 1 : 0; 
-    
+    // Restore Objective Phase
+    // If they were in Phase 1 (index 0) or 2 (index 1), restore it.
+    if (data.game.killCount > 0) ObjectiveSystem.currentPhaseIndex = 1; 
+    if (data.game.survivalTimer > 0) ObjectiveSystem.currentPhaseIndex = 2;
+
     return true;
   },
   
-  // Call this when finishing Tutorial or Chapter 1
-  saveChapterProgress: (chapterNum) => {
-      // This is a separate "Meta" save file just for unlocks
-      const current = localStorage.getItem("0110_meta") || "{}";
-      const meta = JSON.parse(current);
-      meta.chapter = chapterNum;
-      localStorage.setItem("0110_meta", JSON.stringify(meta));
+  // END GAME TRANSITION (Fixes Black Screen)
+  saveAndExit: (nextChapter) => {
+      // 1. Mark Chapter 2 as Unlocked in Local Storage
+      // This is what the Home Page checks to show the Overlay or not.
+      localStorage.setItem("0110_access_token", "UNLOCKED_BY_GAMEPLAY");
+      
+      // 2. Clear the mid-game checkpoint (so they start fresh next time)
+      localStorage.removeItem("0110_checkpoint");
+
+      // 3. Redirect to Home
+      window.location.href = "index.html";
   }
 };
