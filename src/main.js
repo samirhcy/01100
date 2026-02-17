@@ -31,23 +31,27 @@ const GameLogic = {
     InputSystem.init();
     RenderSystem.init();
 
-    // 2. Check for Save Data
-    if (SaveSystem.load()) {
+    // 2. START THE LOOP IMMEDIATELY (Fixes Black Screen)
+    // We start drawing right away so the user never sees a "dead" screen.
+    requestAnimationFrame(GameLogic.loop);
+
+    // 3. Check for Save Data
+    // We try to load. If it returns true, we restore the session.
+    // If false, we start a fresh game.
+    if (await SaveSystem.load()) {
         TerminalSystem.log("SYSTEM RESTORED");
     } else {
-        // 3. New Game Setup
+        // 4. New Game Setup
         State.player.mode = "roam";
         document.body.className = "mode-roam";
         
         GameLogic.checkChunks();
         ObjectiveSystem.init();
         
-        // Only play Intro if it's a fresh start
+        // 5. Play Intro (Non-Blocking)
+        // We await here, but the loop is already running in the background!
         await Cinematics.playIntro();
     }
-
-    // 4. Start Loop
-    requestAnimationFrame(GameLogic.loop);
   },
 
   checkChunks: () => {
