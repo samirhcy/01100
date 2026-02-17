@@ -4,17 +4,22 @@ import { AudioSystem } from '../systems/Audio.js';
 
 export const UISystem = {
   update: () => {
+    // 1. Coordinates (Unchanged)
     document.getElementById("coords-display").innerText = `LOC: [${Math.floor(
       State.player.x
     )}, ${Math.floor(State.player.y)}]`;
     
-    document.getElementById("data-bank").innerText = `DATA: ${State.player.data} MB`;
+    // 2. Data Bank (UPDATED with Formatter)
+    document.getElementById("data-bank").innerText = `DATA: ${formatData(State.player.data)}`;
     
-    document.getElementById("bar-health").style.width = `${State.player.health}%`;
+    // 3. Health Bar (Unchanged)
+    document.getElementById("bar-health").style.width = `${Math.max(0, State.player.health)}%`;
     
+    // 4. Light Value (Unchanged)
     let totalLight = Math.floor(Config.baseLightRadius * State.player.lightLevel);
     document.getElementById("light-val").innerText = totalLight;
     
+    // 5. Shield Label (Unchanged)
     if (State.player.shield > 0)
       document.getElementById("shield-label").classList.remove("hidden");
     else document.getElementById("shield-label").classList.add("hidden");
@@ -31,3 +36,14 @@ export const UISystem = {
     else overlay.classList.remove("visible");
   },
 };
+
+// --- HELPER: DATA UNIT CONVERTER ---
+function formatData(mb) {
+    if (mb >= 1000000) {
+        return (mb / 1000000).toFixed(2) + " TB";
+    } else if (mb >= 1000) {
+        return (mb / 1000).toFixed(2) + " GB";
+    } else {
+        return Math.floor(mb) + " MB";
+    }
+}

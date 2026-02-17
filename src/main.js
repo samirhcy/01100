@@ -25,15 +25,47 @@ window.SaveSystem = SaveSystem;
 window.AudioSystem = AudioSystem;
 window.TerminalSystem = TerminalSystem;
 
-// --- DEVELOPER SKIP COMMAND (Type devSkip() in console) ---
+// --- DEVELOPER TOOLS (CONSOLE COMMANDS) ---
+
+// 1. GOD MODE: Max Stats + 1GB Data
+window.godMode = () => {
+    console.log(">> DEV MODE: GOD STATUS ACTIVE");
+    
+    State.player.data += 1000; // Adds 1000 MB (1 GB)
+    State.player.health = 100; // Restore Health
+    State.player.shield = 100; // Max Shield
+    State.player.isDead = false;
+    
+    // Optional: Boost Light for visibility
+    State.player.lightLevel = 3.0; 
+    
+    TerminalSystem.log("DEV: STATS MAXIMIZED (+1GB DATA)", "warning");
+};
+
+// 2. SKIP TO END: Teleport to Safe Haven & Clear Enemies
 window.devSkip = () => {
-    console.log(">> DEV MODE: SKIPPING TO END GAME");
+    console.log(">> DEV MODE: WARPING TO SAFE HAVEN");
+    
+    // Set Game State to End Phase
     State.player.combatUnlocked = true;
     State.game.killCount = 25; 
-    ObjectiveSystem.currentPhaseIndex = 2; // Jump to final phase
-    State.game.survivalTimer = 590; // 1 second before Safe Haven spawns
-    State.player.x = 0; State.player.y = 0; // Teleport to center
-    TerminalSystem.log("DEV: WARP TO FINALE EXECUTED", "error");
+    ObjectiveSystem.currentPhaseIndex = 2; // Jump to "Locate Signal" phase
+    
+    // Fast-forward survival timer so Haven spawns
+    State.game.survivalTimer = 610; 
+    
+    // NUKE ENEMIES (Safety)
+    State.world.enemies = [];
+    State.world.projectiles = [];
+    
+    // Spawn Haven & Teleport
+    WorldEntity.spawnSafeHaven();
+    if (State.game.safeHaven) {
+        State.player.x = State.game.safeHaven.x;
+        State.player.y = State.game.safeHaven.y;
+    }
+    
+    TerminalSystem.log("DEV: WARP SUCCESSFUL. THREATS CLEARED.", "safe");
 };
 
 const GameLogic = {
