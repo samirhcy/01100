@@ -144,7 +144,7 @@ export const TerminalSystem = {
         break;
       case "cloak":
         State.player.cloaked = true;
-        State.player.cloakTimer = 300;
+        State.player.cloakTimer = 1500;
         TerminalSystem.log("CLOAK ENGAGED");
         break;
       case "heal":
