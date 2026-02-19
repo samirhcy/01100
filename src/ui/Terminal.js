@@ -7,6 +7,10 @@ import { ObjectiveSystem } from './Objective.js';
 import { Utils } from '../utils.js';
 
 export const TerminalSystem = {
+  // NEW: Track the currently selected command for the controller
+  commandCycleIndex: 0,
+  availableCommands: [],
+
   init: () => {
     TerminalSystem.updateHotbar();
     TerminalSystem.print("SYSTEM: NULL SECTOR", "#fff");
@@ -20,14 +24,49 @@ export const TerminalSystem = {
   toggle: () => {
     State.player.isTerminalOpen = !State.player.isTerminalOpen;
     document.getElementById("terminal-wrapper").classList.toggle("open");
+    
     if (State.player.isTerminalOpen) {
       AudioSystem.playSFX("term_open");
-      setTimeout(() => document.getElementById("term-input").focus(), 50);
       ObjectiveSystem.collapse();
+
+      // NEW: Gamepad check. If using a controller, give instructions and pre-fill the input
+      if (State.input.mode === "gamepad") {
+          TerminalSystem.print(">> GAMEPAD: D-Pad to Select, A to Execute", "#00f3ff");
+          TerminalSystem.buildControllerList();
+          if(TerminalSystem.availableCommands.length > 0) {
+              document.getElementById("term-input").value = TerminalSystem.availableCommands[0];
+          }
+      } else {
+          setTimeout(() => document.getElementById("term-input").focus(), 50);
+      }
     } else {
       AudioSystem.playSFX("term_close");
       document.getElementById("term-input").blur();
     }
+  },
+
+  // NEW: Builds a list of commands the player is currently allowed to use
+  buildControllerList: () => {
+    TerminalSystem.availableCommands = Object.keys(CommandBank).filter(key => {
+        const cmd = CommandBank[key];
+        if (cmd.req === "combat" && !State.player.combatUnlocked) return false;
+        if (cmd.req === "light_2" && State.player.lightLevel < 1.3) return false;
+        return true;
+    });
+    TerminalSystem.availableCommands.push("/help");
+    TerminalSystem.availableCommands.push("/cls");
+    TerminalSystem.commandCycleIndex = 0;
+  },
+
+  // NEW: Cycles through the commands and types them into the standard input box
+  cycleControllerCommand: (dir) => {
+    if (TerminalSystem.availableCommands.length === 0) TerminalSystem.buildControllerList();
+    
+    TerminalSystem.commandCycleIndex += dir;
+    if (TerminalSystem.commandCycleIndex < 0) TerminalSystem.commandCycleIndex = TerminalSystem.availableCommands.length - 1;
+    if (TerminalSystem.commandCycleIndex >= TerminalSystem.availableCommands.length) TerminalSystem.commandCycleIndex = 0;
+    
+    document.getElementById("term-input").value = TerminalSystem.availableCommands[TerminalSystem.commandCycleIndex];
   },
 
   updateHotbar: () => {
@@ -138,7 +177,6 @@ export const TerminalSystem = {
         if (!State.player.combatUnlocked) {
           State.player.combatUnlocked = true;
           TerminalSystem.log("COMBAT UNLOCKED");
-          // Calls the local helper function instead of GameLogic
           setTimeout(triggerCombatEvent, 1000);
         } else TerminalSystem.print("ERR: ALREADY ACTIVE", "#f33");
         break;
@@ -164,6 +202,7 @@ export const TerminalSystem = {
       case "shield":
         State.player.shield = 50;
         TerminalSystem.log("SHIELD GENERATED");
+        AudioSystem.playSFX("shield_up");
         break;
       case "unbind":
         if (args[0] && State.hotbar[args[0]]) {

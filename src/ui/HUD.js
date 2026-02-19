@@ -3,6 +3,10 @@ import { Config } from '../config.js';
 import { AudioSystem } from '../systems/Audio.js';
 
 export const UISystem = {
+  // NEW: Track the pause menu selection
+  menuIndex: 0,
+  menuItems: [],
+
   update: () => {
     // 1. Coordinates (Unchanged)
     document.getElementById("coords-display").innerText = `LOC: [${Math.floor(
@@ -28,16 +32,60 @@ export const UISystem = {
   toggleMenu: () => {
     const menu = document.getElementById("menu-dropdown");
     const overlay = document.getElementById("pause-overlay");
-    menu.classList.toggle("show");
     
     State.game.paused = !State.game.paused;
 
-    if (State.game.paused) overlay.classList.add("visible");
-    else overlay.classList.remove("visible");
+    if (State.game.paused) {
+      menu.classList.add("show");
+      overlay.classList.add("visible");
+      
+      // Initialize menu selection array
+      UISystem.menuItems = document.querySelectorAll("#menu-dropdown .menu-item");
+      UISystem.menuIndex = 0;
+      UISystem.highlightMenu();
+    } else {
+      menu.classList.remove("show");
+      overlay.classList.remove("visible");
+    }
   },
+
+  // --- NEW: MENU NAVIGATION LOGIC ---
+
+  navMenu: (dir) => {
+    if (!State.game.paused || UISystem.menuItems.length === 0) return;
+    
+    UISystem.menuIndex += dir;
+    if (UISystem.menuIndex < 0) UISystem.menuIndex = UISystem.menuItems.length - 1;
+    if (UISystem.menuIndex >= UISystem.menuItems.length) UISystem.menuIndex = 0;
+    
+    UISystem.highlightMenu();
+  },
+
+  highlightMenu: () => {
+    // Manually apply the hover CSS so the controller user sees what is selected
+    UISystem.menuItems.forEach((item, index) => {
+      if (index === UISystem.menuIndex) {
+        item.style.background = "rgba(0, 243, 255, 0.2)";
+        item.style.color = "white";
+        item.style.paddingLeft = "25px";
+      } else {
+        item.style.background = "rgba(0, 0, 0, 0.9)";
+        item.style.color = "#ccc";
+        item.style.paddingLeft = "20px";
+      }
+    });
+  },
+
+  selectMenu: () => {
+    if (!State.game.paused || UISystem.menuItems.length === 0) return;
+    const selected = UISystem.menuItems[UISystem.menuIndex];
+    if (selected) {
+       selected.click(); // Triggers the existing HTML onclick attribute!
+    }
+  }
 };
 
-// --- HELPER: DATA UNIT CONVERTER ---
+// --- HELPER: DATA UNIT CONVERTER (Unchanged) ---
 function formatData(mb) {
     if (mb >= 1000000) {
         return (mb / 1000000).toFixed(2) + " TB";

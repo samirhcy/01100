@@ -18,6 +18,7 @@ import { TerminalSystem } from './ui/Terminal.js';
 import { UISystem } from './ui/HUD.js';
 import { ObjectiveSystem } from './ui/Objective.js';
 import { Cinematics } from './ui/Cinematics.js';
+import { DialogueSystem } from './ui/Dialogue.js';
 
 // Expose Systems for Console Debugging
 window.UISystem = UISystem;
@@ -96,6 +97,11 @@ const GameLogic = {
         
         // Only play Intro if it's a fresh start
         await Cinematics.playIntro();
+        
+        // Narrative Hooks using DialogueSystem
+        setTimeout(() => DialogueSystem.show("Where am I? I can't feel my arms...", 4000), 2000);
+        setTimeout(() => DialogueSystem.show("Am I... glowing?", 3000), 8000);
+        setTimeout(() => DialogueSystem.show("I need to figure out how to move.", 4000), 13000);
     }
   },
 
@@ -113,6 +119,9 @@ const GameLogic = {
     // Logic Loop
     if (!State.player.isDead && !State.game.paused) {
         const timeScale = State.player.isTerminalOpen ? 0.1 : 1.0;
+
+        // --- NEW: Poll the gamepad/keyboard vector every frame ---
+        InputSystem.update(); 
 
         PlayerEntity.update(timeScale);
         GameLogic.checkChunks();
@@ -221,8 +230,22 @@ function updateProjectiles(dt) {
                 if (State.game.safeHaven && Utils.dist(State.player.x, State.player.y, State.game.safeHaven.x, State.game.safeHaven.y) < State.game.safeHaven.r) inSafeHaven = true;
 
                 if (!inSafeHaven) {
-                    if (State.player.shield > 0) { State.player.shield -= 10; TerminalSystem.log("SHIELD ABSORB", "safe"); } 
-                    else { State.player.health -= 10; TerminalSystem.log("HULL DAMAGE", "error"); }
+                    if (State.player.shield > 0) { 
+                        State.player.shield -= 10; 
+                        TerminalSystem.log("SHIELD ABSORB", "safe"); 
+                        
+                        // --- ADD THIS CHECK FOR SHIELD DROPPING ---
+                        if (State.player.shield <= 0) {
+                             AudioSystem.playSFX("shield_down");
+                        } else {
+                             AudioSystem.playSFX("player_hit");
+                        }
+                    } 
+                    else { 
+                        State.player.health -= 10; 
+                        TerminalSystem.log("HULL DAMAGE", "error"); 
+                        AudioSystem.playSFX("player_hit"); // <--- ADD THIS LINE
+                    }
                     if (State.player.health <= 0) killPlayer();
                 }
                 State.world.projectiles.splice(i, 1);

@@ -4,6 +4,7 @@ export const State = {
     y: 0,
     vx: 0,
     vy: 0,
+    angle: 0, // NEW: Added to track the player's aiming direction for the right joystick
     size: 10,
     health: 100,
     shield: 0,
@@ -34,5 +35,12 @@ export const State = {
     visitedChunks: new Set(),
   },
   hotbar: { 1: "sys.scan", 2: null, 3: null, 4: null, 5: null },
-  input: { keys: { w: false, a: false, s: false, d: false } },
+  input: { 
+    // NEW: Expanded input object to handle both KBM and Gamepad states smoothly
+    mode: "kbm", 
+    keys: { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false },
+    moveVector: { x: 0, y: 0 }, 
+    aimVector: { x: 0, y: 0 },  
+    gamepadIndex: null 
+  },
 };

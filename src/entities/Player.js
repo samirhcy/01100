@@ -9,15 +9,12 @@ export const PlayerEntity = {
     // 1. Calculate Speed Modifier based on Profile
     let speedMod = State.player.mode === "combat" ? 0.7 : 1.0;
 
-    // 2. Apply Acceleration from Input
-    if (State.input.keys.w)
-      State.player.vy -= Config.player.accel * timeScale * speedMod;
-    if (State.input.keys.s)
-      State.player.vy += Config.player.accel * timeScale * speedMod;
-    if (State.input.keys.a)
-      State.player.vx -= Config.player.accel * timeScale * speedMod;
-    if (State.input.keys.d)
-      State.player.vx += Config.player.accel * timeScale * speedMod;
+    // 2. Apply Acceleration from Unified Input Vector (Keyboard, Arrows, or Gamepad)
+    const vec = State.input.moveVector;
+    if (Math.abs(vec.x) > 0)
+      State.player.vx += vec.x * Config.player.accel * timeScale * speedMod;
+    if (Math.abs(vec.y) > 0)
+      State.player.vy += vec.y * Config.player.accel * timeScale * speedMod;
 
     // 3. Cap Velocity (Max Speed)
     let currentMax = Config.player.maxSpeed;

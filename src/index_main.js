@@ -1,6 +1,8 @@
 /* =========================================
    SECTION 1: CONFIGURATION & STATE
    ========================================= */
+import { DialogueSystem } from './ui/Dialogue.js';
+
 const Config = {
     gridSize: 60,
     baseLightRadius: 300,
