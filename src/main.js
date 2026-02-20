@@ -116,12 +116,11 @@ const GameLogic = {
   },
 
   loop: () => {
+
+    InputSystem.update(); 
     // Logic Loop
     if (!State.player.isDead && !State.game.paused) {
         const timeScale = State.player.isTerminalOpen ? 0.1 : 1.0;
-
-        // --- NEW: Poll the gamepad/keyboard vector every frame ---
-        InputSystem.update(); 
 
         PlayerEntity.update(timeScale);
         GameLogic.checkChunks();

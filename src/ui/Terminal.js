@@ -7,7 +7,6 @@ import { ObjectiveSystem } from './Objective.js';
 import { Utils } from '../utils.js';
 
 export const TerminalSystem = {
-  // NEW: Track the currently selected command for the controller
   commandCycleIndex: 0,
   availableCommands: [],
 
@@ -26,12 +25,11 @@ export const TerminalSystem = {
     document.getElementById("terminal-wrapper").classList.toggle("open");
     
     if (State.player.isTerminalOpen) {
-      AudioSystem.playSFX("term_open");
+      if (AudioSystem && AudioSystem.playSFX) AudioSystem.playSFX("term_open");
       ObjectiveSystem.collapse();
 
-      // NEW: Gamepad check. If using a controller, give instructions and pre-fill the input
       if (State.input.mode === "gamepad") {
-          TerminalSystem.print(">> GAMEPAD: D-Pad to Select, A to Execute", "#00f3ff");
+          TerminalSystem.print(">> GAMEPAD: D-Pad Selects. A to Run. X/Square to Bind.", "#00f3ff");
           TerminalSystem.buildControllerList();
           if(TerminalSystem.availableCommands.length > 0) {
               document.getElementById("term-input").value = TerminalSystem.availableCommands[0];
@@ -40,17 +38,17 @@ export const TerminalSystem = {
           setTimeout(() => document.getElementById("term-input").focus(), 50);
       }
     } else {
-      AudioSystem.playSFX("term_close");
+      if (AudioSystem && AudioSystem.playSFX) AudioSystem.playSFX("term_close");
       document.getElementById("term-input").blur();
     }
   },
 
-  // NEW: Builds a list of commands the player is currently allowed to use
   buildControllerList: () => {
     TerminalSystem.availableCommands = Object.keys(CommandBank).filter(key => {
         const cmd = CommandBank[key];
         if (cmd.req === "combat" && !State.player.combatUnlocked) return false;
-        if (cmd.req === "light_2" && State.player.lightLevel < 1.3) return false;
+        // Float precision check to ensure sys.speed is visible
+        if (cmd.req === "light_2" && State.player.lightLevel < 1.25) return false;
         return true;
     });
     TerminalSystem.availableCommands.push("/help");
@@ -58,20 +56,31 @@ export const TerminalSystem = {
     TerminalSystem.commandCycleIndex = 0;
   },
 
-  // NEW: Cycles through the commands and types them into the standard input box
   cycleControllerCommand: (dir) => {
     if (TerminalSystem.availableCommands.length === 0) TerminalSystem.buildControllerList();
     
-    TerminalSystem.commandCycleIndex += dir;
-    if (TerminalSystem.commandCycleIndex < 0) TerminalSystem.commandCycleIndex = TerminalSystem.availableCommands.length - 1;
-    if (TerminalSystem.commandCycleIndex >= TerminalSystem.availableCommands.length) TerminalSystem.commandCycleIndex = 0;
+    // Typecast to absolutely prevent NaN freezes
+    let idx = parseInt(TerminalSystem.commandCycleIndex) || 0;
+    idx += dir;
+    if (idx < 0) idx = TerminalSystem.availableCommands.length - 1;
+    if (idx >= TerminalSystem.availableCommands.length) idx = 0;
     
-    document.getElementById("term-input").value = TerminalSystem.availableCommands[TerminalSystem.commandCycleIndex];
+    TerminalSystem.commandCycleIndex = idx;
+    document.getElementById("term-input").value = TerminalSystem.availableCommands[idx] || "";
   },
 
   updateHotbar: () => {
-    for (let i = 1; i <= 5; i++)
-      document.getElementById(`slot-${i}`).innerText = State.hotbar[i] || "";
+    // Safely parse active slot to prevent string-based freezes
+    let activeSlot = parseInt(State.hotbar.activeSlot) || 1;
+    for (let i = 1; i <= 5; i++) {
+      const slotBox = document.getElementById(`slot-${i}-box`);
+      const slotCmd = document.getElementById(`slot-${i}`);
+      if(slotBox && slotCmd) {
+          slotCmd.innerText = State.hotbar[i] || "";
+          slotBox.style.borderColor = (activeSlot === i) ? "var(--primary)" : "#444";
+          slotBox.style.boxShadow = (activeSlot === i) ? "0 0 10px rgba(0,243,255,0.3)" : "none";
+      }
+    }
   },
 
   print: (msg, color, type = "msg") => {
@@ -85,7 +94,7 @@ export const TerminalSystem = {
   },
 
   log: (msg, type = "new") => {
-    AudioSystem.playSFX("log");
+    if (AudioSystem && AudioSystem.playSFX) AudioSystem.playSFX("log");
     const l = document.getElementById("system-log");
     const d = document.createElement("div");
     d.className = `log-entry ${type}`;
@@ -103,11 +112,7 @@ export const TerminalSystem = {
     if (cmdKey === "/help") {
       TerminalSystem.print("--- SYSTEM COMMANDS ---", "#fff");
       for (const [key, val] of Object.entries(CommandBank)) {
-        if (
-          !val.req ||
-          (val.req === "combat" && State.player.combatUnlocked) ||
-          (val.req === "light_2" && State.player.lightLevel > 1.3)
-        ) {
+        if (!val.req || (val.req === "combat" && State.player.combatUnlocked) || (val.req === "light_2" && State.player.lightLevel > 1.25)) {
           TerminalSystem.print(`${key} [${val.desc}] - ${val.cost} MB`, "#ccc");
         }
       }
@@ -137,85 +142,47 @@ export const TerminalSystem = {
     }
 
     const cmdData = CommandBank[cmdKey];
-    if (!cmdData) {
-      TerminalSystem.print(`ERR: UNKNOWN COMMAND '${cmdKey}'`, "#ff3333");
-      return;
-    }
-    if (cmdData.req === "combat" && !State.player.combatUnlocked)
-      return TerminalSystem.print("ERR: COMBAT MODULE NOT FOUND", "#ff3333");
-    if (cmdData.req === "light_2" && State.player.lightLevel < 1.3)
-      return TerminalSystem.print("ERR: LIGHT LEVEL TOO LOW", "#ff3333");
-    if (State.player.data < cmdData.cost)
-      return TerminalSystem.print(`ERR: NEED ${cmdData.cost} MB DATA`, "#ff3333");
+    if (!cmdData) { TerminalSystem.print(`ERR: UNKNOWN COMMAND '${cmdKey}'`, "#ff3333"); return; }
+    if (cmdData.req === "combat" && !State.player.combatUnlocked) return TerminalSystem.print("ERR: COMBAT MODULE NOT FOUND", "#ff3333");
+    if (cmdData.req === "light_2" && State.player.lightLevel < 1.25) return TerminalSystem.print("ERR: LIGHT LEVEL TOO LOW", "#ff3333");
+    if (State.player.data < cmdData.cost) return TerminalSystem.print(`ERR: NEED ${cmdData.cost} MB DATA`, "#ff3333");
 
     if (cmdData.limit) {
-      if (cmdKey === "sys.speed" && State.player.stats.speedLevel >= cmdData.limit)
-        return TerminalSystem.print("ERR: MAX SPEED REACHED", "#ff3333");
-      if (cmdKey === "sys.fire" && State.player.stats.fireRateLevel >= cmdData.limit)
-        return TerminalSystem.print("ERR: MAX FIRE RATE REACHED", "#ff3333");
-      if (cmdKey === "sys.protect" && State.player.shield > 0)
-        return TerminalSystem.print("ERR: SHIELD ALREADY ACTIVE", "#ff3333");
+      if (cmdKey === "sys.speed" && State.player.stats.speedLevel >= cmdData.limit) return TerminalSystem.print("ERR: MAX SPEED REACHED", "#ff3333");
+      if (cmdKey === "sys.fire" && State.player.stats.fireRateLevel >= cmdData.limit) return TerminalSystem.print("ERR: MAX FIRE RATE REACHED", "#ff3333");
+      if (cmdKey === "sys.protect" && State.player.shield > 0) return TerminalSystem.print("ERR: SHIELD ALREADY ACTIVE", "#ff3333");
     }
 
     State.player.data -= cmdData.cost;
     TerminalSystem.print(`EXEC: ${cmdKey}... OK`, "#00ffaa");
-    AudioSystem.playSFX("term_success");
+    if (AudioSystem && AudioSystem.playSFX) AudioSystem.playSFX("term_success");
 
     switch (cmdData.action) {
-      case "scan":
-        State.player.scanActive = true;
-        State.player.scanTimer = 600;
-        TerminalSystem.log("SCAN COMPLETE");
+      case "scan": State.player.scanActive = true; State.player.scanTimer = 600; TerminalSystem.log("SCAN COMPLETE"); break;
+      case "light": 
+        if (State.player.lightLevel < Config.maxLightLevel) { State.player.lightLevel += 0.2; TerminalSystem.log("LIGHT UPGRADED"); } 
+        else TerminalSystem.print("ERR: MAX LIGHT", "#f33"); 
         break;
-      case "light":
-        if (State.player.lightLevel < Config.maxLightLevel) {
-          State.player.lightLevel += 0.2;
-          TerminalSystem.log("LIGHT UPGRADED");
-        } else TerminalSystem.print("ERR: MAX LIGHT", "#f33");
+      case "combat": 
+        if (!State.player.combatUnlocked) { State.player.combatUnlocked = true; TerminalSystem.log("COMBAT UNLOCKED"); setTimeout(triggerCombatEvent, 1000); } 
+        else TerminalSystem.print("ERR: ALREADY ACTIVE", "#f33"); 
         break;
-      case "combat":
-        if (!State.player.combatUnlocked) {
-          State.player.combatUnlocked = true;
-          TerminalSystem.log("COMBAT UNLOCKED");
-          setTimeout(triggerCombatEvent, 1000);
-        } else TerminalSystem.print("ERR: ALREADY ACTIVE", "#f33");
-        break;
-      case "cloak":
-        State.player.cloaked = true;
-        State.player.cloakTimer = 1500;
-        TerminalSystem.log("CLOAK ENGAGED");
-        break;
-      case "heal":
-        State.player.health = Math.min(100, State.player.health + 50);
-        TerminalSystem.log("HULL REPAIRED");
-        break;
-      case "speed":
-        State.player.stats.speedLevel++;
-        Config.player.maxSpeed += 1;
-        Config.player.accel += 0.05;
-        TerminalSystem.log("VELOCITY INCREASED");
-        break;
-      case "firerate":
-        State.player.stats.fireRateLevel++;
-        TerminalSystem.log("WEAPON OVERCLOCKED");
-        break;
-      case "shield":
-        State.player.shield = 50;
-        TerminalSystem.log("SHIELD GENERATED");
-        AudioSystem.playSFX("shield_up");
+      case "cloak": State.player.cloaked = true; State.player.cloakTimer = 1500; TerminalSystem.log("CLOAK ENGAGED"); break;
+      case "heal": State.player.health = Math.min(100, State.player.health + 50); TerminalSystem.log("HULL REPAIRED"); break;
+      case "speed": State.player.stats.speedLevel++; Config.player.maxSpeed += 1; Config.player.accel += 0.05; TerminalSystem.log("VELOCITY INCREASED"); break;
+      case "firerate": State.player.stats.fireRateLevel++; TerminalSystem.log("WEAPON OVERCLOCKED"); break;
+      case "shield": 
+        State.player.shield = 50; 
+        TerminalSystem.log("SHIELD GENERATED"); 
+        if (AudioSystem && AudioSystem.playSFX) AudioSystem.playSFX("shield_up");
         break;
       case "unbind":
-        if (args[0] && State.hotbar[args[0]]) {
-          State.hotbar[args[0]] = null;
-          TerminalSystem.updateHotbar();
-          TerminalSystem.print(`UNBOUND KEY [${args[0]}]`, "#0ff");
-        }
+        if (args[0] && State.hotbar[args[0]]) { State.hotbar[args[0]] = null; TerminalSystem.updateHotbar(); TerminalSystem.print(`UNBOUND KEY [${args[0]}]`, "#0ff"); }
         break;
     }
   },
 };
 
-// --- HELPER: Trigger Combat (Originally in GameLogic) ---
 function triggerCombatEvent() {
   TerminalSystem.print("WARNING: ARCHITECTURE RE-WRITTEN", "#ff3333");
   TerminalSystem.print(">> HOSTILES DETECTED", "#ff3333");

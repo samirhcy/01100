@@ -23,7 +23,7 @@ export const Cinematics = {
     AudioSystem.playSFX("story_ambience");
     document.getElementById("story-overlay").style.opacity = 1;
     
-    await Utils.wait(20000);
+    await Utils.wait(2000);
     document.getElementById("story-overlay").style.opacity = 0;
     await Utils.wait(1000);
 

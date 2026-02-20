@@ -100,10 +100,22 @@ export const RenderSystem = {
       }
     });
 
-    // 6. Draw Projectiles
+    // 6. Draw Projectiles (Laser Style)
     State.world.projectiles.forEach((p) => {
-      ctx.fillStyle = p.type === "player" ? "#ff0" : "#f00";
-      ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      // Rotate the canvas to match the bullet's direction
+      ctx.rotate(Math.atan2(p.vy, p.vx)); 
+      
+      // Player shoots Cyan, Enemies shoot Red
+      ctx.fillStyle = p.type === "player" ? "#00f3ff" : "#ff3333";
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = ctx.fillStyle;
+      
+      // Draw a stretched rectangle (Laser) instead of a square
+      ctx.fillRect(-8, -1.5, 16, 3); 
+      
+      ctx.restore();
     });
 
     // 7. Draw Safe Haven

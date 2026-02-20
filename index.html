@@ -425,6 +425,10 @@
 
       const Menu = {
         start: () => {
+            // Request Fullscreen on the very first click
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch((e) => console.log(e));
+            }
             Menu.transition(() => {
                 if (GameState.chapter === 0) window.location.href = "tutorial.html";
                 else window.location.href = "game.html";

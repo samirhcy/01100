@@ -34,7 +34,7 @@ export const State = {
     projectiles: [],
     visitedChunks: new Set(),
   },
-  hotbar: { 1: "sys.scan", 2: null, 3: null, 4: null, 5: null },
+  hotbar: { 1: "sys.scan", 2: null, 3: null, 4: null, 5: null, activeSlot: 1 },
   input: { 
     // NEW: Expanded input object to handle both KBM and Gamepad states smoothly
     mode: "kbm", 
