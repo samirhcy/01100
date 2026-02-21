@@ -515,16 +515,13 @@
                     status.style.color = "#00ffaa";
                     status.innerText = "ACCESS GRANTED. WRITING TO DISK...";
                     
-                    // Save the "Proof of Purchase" locally
                     localStorage.setItem("0110_access_token", inputVal);
-                    
                     GameState.hasToken = true;
+                    
+                    // Route to Chapter 2!
                     setTimeout(() => {
-                        document.getElementById("token-overlay").classList.remove("visible");
-                    }, 1000);
-                } else {
-                    status.style.color = "#f33";
-                    status.innerText = "ERR: INVALID TOKEN KEY";
+                        window.location.href = "code84.html"; // <-- ADD THIS LINE
+                    }, 1500);
                 }
             } catch (e) {
                 status.innerText = "ERR: NETWORK/DATABASE OFFLINE";

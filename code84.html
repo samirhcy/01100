@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>0110-The Institute (Chapter 2)</title>
+    <link rel="icon" type="image/png" href="assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap" rel="stylesheet" />
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+      /* --- CORE CSS (Restored to Cyan Defaults) --- */
+      :root {
+        --primary: #00f3ff;
+        --combat: #ff3333;
+        --terminal-text: #00ff00;
+        --terminal-border: #00ff00;
+        --passive: #888888;
+        --bg-glass: rgba(5, 10, 15, 0.95);
+        --margin: 30px;
+        --obj-bg: rgba(0, 20, 20, 0.9);
+        --obj-border: #004444;
+        
+        /* AETHER LENS SPECIFIC COLORS */
+        --aether-color: #bd00ff; /* Purple */
+        --aether-grid: rgba(0, 255, 0, 0.15); /* Green Grid */
+      }
+
+      body {
+        margin: 0; overflow: hidden; background-color: #000000;
+        font-family: "Inconsolata", "Courier New", monospace;
+        color: white; user-select: none;
+      }
+      canvas { display: block; }
+
+      body.mode-roam {
+        --hud-color: var(--primary);
+        --terminal-text: #00ff00;
+        --terminal-border: #004400;
+      }
+      body.mode-combat {
+        --hud-color: var(--combat);
+        --terminal-text: #ff3333;
+        --terminal-border: #440000;
+        
+        /* Lens turns red in combat */
+        --aether-color: #ff3333; 
+        --aether-grid: rgba(255, 51, 51, 0.15);
+      }
+
+      /* OVERLAYS */
+      #fade-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; opacity: 0; transition: opacity 3s; z-index: 9999; pointer-events: none;}
+      #cinematic-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;}
+      .title-text { font-size: 50px; font-weight: bold; letter-spacing: 15px; text-shadow: 0 0 30px white; opacity: 0; transition: opacity 2s ease-in-out;}
+      .subtitle-text { font-size: 25px; letter-spacing: 8px; color: var(--primary); margin-top: 20px; opacity: 0; transition: opacity 2s ease-in-out;}
+      #story-overlay, #overlay-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; display: none; z-index: 9998; }
+      #pause-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 900; }
+      #pause-overlay.visible { display: flex; pointer-events: auto; }
+      #pause-text { font-size: 40px; letter-spacing: 10px; text-shadow: 0 0 20px #fff; }
+
+      /* UI LAYER */
+      #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 2s; transform-origin: top center;}
+      #ui-layer.active { opacity: 1; }
+      @media (max-width: 1366px), (max-height: 800px) {
+        #ui-layer { transform: scale(0.85); width: 117.6%; height: 117.6%; left: -8.8%; top: -8.8%; --margin: 20px; }
+      }
+      .hud-element { pointer-events: auto; position: absolute; }
+      .hidden { display: none !important; }
+
+      #profile-indicator { position: absolute; top: var(--margin); left: 50%; transform: translateX(-50%); border: 1px solid var(--hud-color); background: rgba(0, 0, 0, 0.8); padding: 5px 20px; font-weight: bold; color: var(--hud-color); text-shadow: 0 0 10px var(--hud-color); letter-spacing: 2px; transition: 0.3s;}
+      
+      #hud-top-left { top: var(--margin); left: var(--margin); width: 350px; text-shadow: 0 1px 2px black;}
+      .log-entry { font-size: 14px; margin-bottom: 4px; opacity: 0.6; transition: opacity 0.5s; color: var(--hud-color);}
+      .log-entry.new { opacity: 1; font-weight: bold; text-shadow: 0 0 8px var(--hud-color);}
+      .log-entry.error { color: #ff3333; opacity: 1; text-shadow: 0 0 8px #ff3333;}
+      .log-entry.safe { color: #00ffaa; opacity: 1; text-shadow: 0 0 10px #00ffaa;}
+      #coords-display { margin-top: 10px; font-size: 13px; color: #888; letter-spacing: 1px;}
+
+      #hud-top-right { top: var(--margin); right: var(--margin); display: flex; flex-direction: column; align-items: flex-end; z-index: 1000;}
+      #menu-icon { font-size: 24px; color: var(--primary); cursor: pointer; padding: 5px; background: rgba(0, 0, 0, 0.5); transition: 0.2s; border: 1px solid transparent;}
+      #menu-icon:hover { border-color: var(--primary);}
+      #menu-dropdown { display: none; margin-top: 10px; background: var(--bg-glass); border: 1px solid var(--primary); min-width: 140px;}
+      #menu-dropdown.show { display: block;}
+      .menu-item { padding: 15px 20px; font-size: 14px; color: #ccc; cursor: pointer; border-bottom: 1px solid #333; background: rgba(0, 0, 0, 0.9); transition: 0.2s; letter-spacing: 1px;}
+      .menu-item:hover { background: rgba(0, 243, 255, 0.2); color: white; padding-left: 25px;}
+
+      /* --- AETHER LENS & HAXNODE OS MODULE --- */
+      #aether-lens-wrapper {
+        display: none; 
+        flex-direction: column;
+        width: 300px;
+        height: 220px;
+        background-color: rgba(0, 10, 15, 0.98);
+        border: 1px solid var(--aether-color);
+        box-shadow: 0 0 15px rgba(189, 0, 255, 0.2);
+        margin-bottom: 10px;
+        position: relative;
+        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        pointer-events: auto;
+      }
+      #aether-lens-wrapper.fullscreen {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 85vw; height: 85vh; z-index: 9999; margin-bottom: 0;
+        box-shadow: 0 0 50px rgba(189, 0, 255, 0.4);
+      }
+      .aether-header { background: #000; padding: 5px 10px; font-size: 11px; color: var(--aether-color); display: flex; justify-content: space-between; border-bottom: 1px solid var(--aether-color);}
+      .aether-btn { cursor: pointer; padding: 0 5px; transition: 0.2s; font-weight: bold; }
+      .aether-btn:hover { background: var(--aether-color); color: #000; }
+      
+      .aether-screen { flex-grow: 1; position: relative; overflow: hidden; background-color: #050505;}
+      
+      /* COLLAPSED 3D SCANNER VIEW */
+      #aether-view-collapsed { width: 100%; height: 100%; position: relative; background-image: linear-gradient(var(--aether-grid) 1px, transparent 1px), linear-gradient(90deg, var(--aether-grid) 1px, transparent 1px); background-size: 20px 20px; }
+      #aether-3d-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+      #aether-scanner-text { position: absolute; bottom: 10px; left: 10px; right: 10px; font-size: 10px; color: var(--aether-color); text-shadow: 0 0 5px #000; background: rgba(0,0,0,0.7); padding: 5px; border-left: 2px solid var(--aether-color);}
+
+      /* EXPANDED HAXNODE OS VIEW */
+      #haxnode-os { width: 100%; height: 100%; display: none; flex-direction: row; font-family: "Inconsolata", monospace; }
+      
+      /* PANE 1: App Icons */
+      .os-pane-1 { width: 80px; background: rgba(0, 5, 10, 0.95); border-right: 1px solid var(--aether-color); display: flex; flex-direction: column; padding: 15px 0; gap: 20px; align-items: center; z-index: 2; }
+      .os-icon { display: flex; flex-direction: column; align-items: center; cursor: pointer; font-size: 9px; color: #888; transition: 0.2s; text-align: center; font-weight: bold; width: 100%; padding: 10px 0;}
+      .os-icon:hover, .os-icon.active { color: var(--aether-color); background: rgba(189, 0, 255, 0.1); border-left: 3px solid var(--aether-color); }
+      .wf-icon { width: 35px; height: 35px; border: 1px solid currentColor; display: flex; justify-content: center; align-items: center; margin-bottom: 8px; font-size: 14px; position: relative;}
+      
+      /* PANE 2: Context / Actions */
+      .os-pane-2 { width: 280px; background: rgba(10, 10, 15, 0.9); border-right: 1px dashed var(--aether-color); display: flex; flex-direction: column; z-index: 1;}
+      .os-pane-header { padding: 10px; background: rgba(189, 0, 255, 0.1); border-bottom: 1px solid var(--aether-color); color: var(--aether-color); font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase;}
+      .os-pane-content { flex-grow: 1; overflow-y: auto; padding: 10px; }
+      
+      /* PANE 3: Main Viewport / Editor */
+      .os-pane-3 { flex-grow: 1; background: #020202; display: flex; flex-direction: column; position: relative; }
+      .os-memory-bar { position: absolute; bottom: 0; left: 0; width: 100%; padding: 5px 10px; background: #000; border-top: 1px solid #333; color: #555; font-size: 10px; display: flex; justify-content: space-between;}
+      .os-editor-area { flex-grow: 1; padding: 20px; color: #ccc; font-size: 14px; line-height: 1.5; overflow-y: auto; outline: none; border: none; background: transparent; resize: none; width: 100%; font-family: "Inconsolata", monospace; }
+
+      /* OS UI Elements */
+      .os-list-item { padding: 8px 10px; border: 1px solid transparent; color: #aaa; font-size: 12px; cursor: pointer; transition: 0.2s; margin-bottom: 5px; display: flex; justify-content: space-between;}
+      .os-list-item:hover, .os-list-item.selected { border-color: var(--aether-color); background: rgba(189, 0, 255, 0.05); color: #fff; }
+      .os-btn { width: 100%; padding: 10px; background: #000; border: 1px solid var(--aether-color); color: var(--aether-color); cursor: pointer; font-family: inherit; font-size: 12px; font-weight: bold; transition: 0.2s; margin-bottom: 10px; text-transform: uppercase; text-align: left;}
+      .os-btn:hover { background: var(--aether-color); color: #000; }
+      .os-btn:disabled { border-color: #333; color: #555; cursor: not-allowed; background: #000; }
+      
+      .os-input { width: 100%; padding: 10px; background: rgba(0,0,0,0.8); border: 1px solid #444; color: #fff; font-family: inherit; margin-bottom: 10px; outline: none; transition: 0.2s;}
+      .os-input:focus { border-color: var(--aether-color); box-shadow: 0 0 10px rgba(189,0,255,0.2);}
+
+      /* OBJECTIVES & MAP */
+      #hud-bottom-left { bottom: var(--margin); left: var(--margin); display: flex; flex-direction: column; gap: 8px;}
+      #objective-wrapper { width: 250px; background: var(--obj-bg); border: 1px solid var(--obj-border); border-radius: 4px; overflow: hidden; transition: height 0.3s ease, border-color 0.3s, box-shadow 0.3s; height: 38px; margin-bottom: 5px;}
+      #objective-wrapper.expanded { height: auto; min-height: 120px; border-color: var(--primary); box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);}
+      .pulse-anim { animation: box-pulse 0.5s ease-in-out; }
+      @keyframes box-pulse { 0% { border-color: var(--obj-border);} 50% { border-color: #fff; box-shadow: 0 0 15px #fff;} 100% { border-color: var(--obj-border);}}
+      .obj-header { height: 38px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; font-size: 14px; font-weight: bold; background: rgba(0, 0, 0, 0.3); color: #fff;}
+      .obj-indicator { width: 6px; height: 6px; border-radius: 50%; background: #444;}
+      .obj-indicator.active { background: var(--primary); box-shadow: 0 0 5px var(--primary);}
+      .obj-content { padding: 10px; border-top: 1px solid #333;}
+      .obj-title { color: var(--primary); font-size: 14px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;}
+      .task-list { display: flex; flex-direction: column; gap: 4px;}
+      .task-item { font-size: 12px; color: #888; display: flex; align-items: center; gap: 6px;}
+      .task-item.done { color: #444; text-decoration: line-through;}
+      .task-checkbox { color: #444; font-weight: bold;}
+      .task-item.done .task-checkbox { color: var(--primary);}
+      #data-bank { font-size: 14px; color: var(--hud-color); font-weight: bold; background: rgba(0, 0, 0, 0.5); padding: 5px 10px; border-left: 3px solid var(--hud-color); transition: 0.3s;}
+      #minimap-container { width: 140px; height: 140px; border-radius: 50%; border: 2px solid #333; background: #000; overflow: hidden; position: relative; box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);}
+      #minimap-canvas { width: 100%; height: 100%; opacity: 0.9;}
+      #minimap-border { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; border: 1px solid var(--hud-color); box-shadow: inset 0 0 10px var(--hud-color); pointer-events: none; transition: 0.3s;}
+
+      /* CENTER STATS */
+      #hud-bottom-center { bottom: var(--margin); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; width: 500px;}
+      .stats-row { display: flex; gap: 15px; width: 100%; margin-bottom: 12px;}
+      .bar-wrapper { flex: 1;}
+      .bar-container { height: 6px; background: #111; border: 1px solid #444; position: relative;}
+      #bar-health { height: 100%; width: 100%; transition: width 0.2s, background 0.3s;}
+      body.mode-roam #bar-health { background: var(--passive);}
+      body.mode-combat #bar-health { background: var(--combat); box-shadow: 0 0 8px var(--combat);}
+      #shield-label { position: absolute; top: -15px; right: 0; font-size: 9px; color: #00ffaa; font-weight: bold; letter-spacing: 1px;}
+      .light-display { width: 100%; text-align: right; font-size: 10px; color: #ccc; margin-top: 2px;}
+      #light-val { color: var(--primary); font-weight: bold;}
+      .bar-label { font-size: 10px; margin-bottom: 4px; display: block; color: #aaa;}
+      #hotbar { display: flex; gap: 5px; transition: opacity 0.3s; width: 100%;}
+      .slot { flex: 1; height: 45px; background: rgba(20, 20, 20, 0.6); border: 1px solid #444; color: #666; display: flex; justify-content: center; align-items: center; font-size: 10px; position: relative;}
+      .slot-cmd { color: var(--primary); font-size: 9px; padding: 2px; position: absolute; bottom: 2px; width: 100%; text-align: center; white-space: nowrap; text-overflow: ellipsis;}
+
+      /* TERMINAL */
+      #hud-bottom-right { bottom: var(--margin); right: var(--margin); display: flex; flex-direction: column; align-items: flex-end; z-index: 100;}
+      #tablet-icon { width: 50px; height: 50px; background: var(--bg-glass); border: 1px solid var(--hud-color); border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer; color: var(--hud-color); font-size: 20px; z-index: 101; transition: 0.3s;}
+      #tablet-icon:hover { text-shadow: 0 0 10px var(--hud-color); box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);}
+      #terminal-wrapper { position: absolute; bottom: 60px; right: 0; width: 0; height: 0; opacity: 0; background: rgba(5, 15, 5, 0.98); border: 1px solid var(--terminal-border); border-radius: 6px; display: flex; flex-direction: column; transform-origin: bottom right; overflow: hidden; box-shadow: 0 0 30px rgba(0, 0, 0, 0.8); transition: opacity 0.1s linear 0.6s, height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s, width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;}
+      #terminal-wrapper.open { width: clamp(200px, 30vw, 400px); height: clamp(300px, 40vh, 600px); opacity: 1; transition: opacity 0.1s linear 0s, width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0s, height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;}
+      .term-header { background: #000; padding: 8px 12px; font-size: 11px; color: var(--terminal-text); display: flex; justify-content: space-between; border-bottom: 1px solid #222; letter-spacing: 1px;}
+      #term-output { flex-grow: 1; padding: 15px; overflow-y: auto; font-family: "Inconsolata", "Consolas", monospace; font-size: 12px; color: var(--terminal-text); line-height: 1.5; scrollbar-width: none;}
+      #term-output::-webkit-scrollbar { display: none;}
+      #term-input-line { display: flex; padding: 12px; background: #000; border-top: 1px solid #222;}
+      #term-input { background: transparent; border: none; color: var(--terminal-text); font-family: "Inconsolata", "Consolas", monospace; font-size: 13px; flex-grow: 1; outline: none;}
+      .term-msg { margin-bottom: 6px;}
+    </style>
+  </head>
+  <body class="mode-roam">
+    <div id="fade-overlay"></div>
+    <div id="cinematic-overlay">
+      <div id="intro-title" class="title-text">CHAPTER 2</div>
+      <div id="intro-sub" class="subtitle-text">THE UNKNOWN</div>
+    </div>
+    <div id="story-overlay"></div>
+    <div id="overlay-screen"></div>
+    <div id="pause-overlay"><div id="pause-text">PAUSED</div></div>
+
+    <div id="ui-layer">
+      <div id="profile-indicator" class="hidden">PROFILE: ROAMING</div>
+      <div id="hud-top-left" class="hud-element">
+        <div id="system-log"></div>
+        <div id="coords-display">Location: [0, 0]</div>
+      </div>
+      <div id="hud-top-right" class="hud-element">
+        <div id="menu-icon" onclick="UISystem.toggleMenu()">☰</div>
+        <div id="menu-dropdown">
+          <div class="menu-item" onclick="SaveSystem.save()">> SAVE SIGNAL</div>
+          <div class="menu-item" onclick="SaveSystem.saveAndExit(2)">> EXIT TO NEURAL LINK</div>
+          <div class="menu-item" id="btn-bgm-toggle" onclick="AudioSystem.toggleBGM()">> MUTE AUDIO</div>
+        </div>
+      </div>
+      
+      <div id="hud-bottom-left" class="hud-element">
+        <div id="aether-lens-wrapper">
+          <div class="aether-header">
+            <span>AETHER_LENS // haxnodeOS v1.0</span>
+            <span class="aether-btn" id="btn-aether-expand" onclick="window.AetherLens.toggleFullscreen()">[EXPAND (E)]</span>
+          </div>
+          <div class="aether-screen">
+            
+            <div id="aether-view-collapsed">
+              <div id="aether-3d-container"></div>
+              <div id="aether-scanner-text">> SCANNING NULL SAFETY...</div>
+            </div>
+            
+            <div id="haxnode-os">
+               <div class="os-pane-1">
+                 <div class="os-icon active" onclick="window.AetherLens.OS.launchApp('files')" id="os-icon-files">
+                    <div class="wf-icon" style="border-top:none; border-bottom: 2px solid currentColor;">🗂️</div>FILES
+                 </div>
+                 <div class="os-icon" onclick="window.AetherLens.OS.launchApp('reader')" id="os-icon-reader">
+                    <div class="wf-icon" style="border-radius: 4px;">📖</div>READER
+                 </div>
+                 <div class="os-icon" onclick="window.AetherLens.OS.launchApp('workbench')" id="os-icon-workbench">
+                    <div class="wf-icon">>_</div>W_BENCH
+                 </div>
+               </div>
+               
+               <div class="os-pane-2">
+                 <div class="os-pane-header" id="os-pane-2-title">SYSTEM_ROOT</div>
+                 <div class="os-pane-content" id="os-pane-2-content">
+                    </div>
+               </div>
+
+               <div class="os-pane-3">
+                  <div class="os-pane-header" id="os-pane-3-title">VIEWPORT: IDLE</div>
+                  <textarea class="os-editor-area" id="os-pane-3-content" readonly placeholder="Awaiting input..."></textarea>
+                  
+                  <div class="os-memory-bar">
+                      <span id="os-ram-usage">RAM: 124 MB / 1024 MB</span>
+                      <span>SYS.AUTH: WilliamHayes</span>
+                  </div>
+               </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div id="objective-wrapper">
+          <div class="obj-header">
+            <span id="obj-summary">OBJ: INITIALIZE</span>
+            <div class="obj-indicator" id="obj-pulse-dot"></div>
+          </div>
+          <div class="obj-content">
+            <div class="obj-title" id="obj-phase-title">PHASE 1: PREP</div>
+            <div class="task-list" id="obj-task-list"></div>
+          </div>
+        </div>
+        <div id="data-bank">DATA: 0 MB</div>
+        <div id="minimap-container">
+          <canvas id="minimap-canvas" width="140" height="140"></canvas>
+          <div id="minimap-border"></div>
+        </div>
+      </div>
+
+      <div id="hud-bottom-center" class="hud-element">
+        <div class="stats-row">
+          <div class="bar-wrapper">
+            <span class="bar-label">INTEGRITY</span>
+            <div class="bar-container"><div id="bar-health"></div><span id="shield-label" class="hidden">[SHIELD ACTIVE]</span></div>
+          </div>
+          <div class="bar-wrapper">
+            <span class="bar-label">-----</span>
+            <div class="light-display">LUMENS: <span id="light-val">300</span></div>
+          </div>
+        </div>
+        <div id="hotbar">
+          <div class="slot" id="slot-1-box"><span>1</span><div class="slot-cmd" id="slot-1"></div></div>
+          <div class="slot" id="slot-2-box"><span>2</span><div class="slot-cmd" id="slot-2"></div></div>
+          <div class="slot" id="slot-3-box"><span>3</span><div class="slot-cmd" id="slot-3"></div></div>
+          <div class="slot" id="slot-4-box"><span>4</span><div class="slot-cmd" id="slot-4"></div></div>
+          <div class="slot" id="slot-5-box"><span>5</span><div class="slot-cmd" id="slot-5"></div></div>
+        </div>
+      </div>
+
+      <div id="hud-bottom-right" class="hud-element">
+        <div id="terminal-wrapper">
+          <div class="term-header"><span>ROOT // USER: WilliamHayes</span><span>v1.0.4</span></div>
+          <div id="term-output"></div>
+          <div id="term-input-line"><span style="color: var(--terminal-text); margin-right: 10px">></span><input type="text" id="term-input" autocomplete="off" /></div>
+        </div>
+        <div id="tablet-icon" onclick="TerminalSystem.toggle()">&lt;/&gt;</div>
+      </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+    <script type="module" src="src_ch2/main.js"></script>
+  </body>
+</html>
